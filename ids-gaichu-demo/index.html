@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>アイディーサービス 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --green:#1a6b2a;
+  --green-mid:#2e8b3e;
+  --green-light:#e8f5e9;
+  --lime:#76c442;
+  --yellow:#f5c800;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --blue:#1565c0;
+  --blue-light:#e3f0fc;
+  --gray-bg:#f3f6f3;
+  --ink:#1a2a1a;
+  --gray:#5a6a5a;
+  --line:#d8e4d8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#1a2a1a;color:var(--lime);text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:var(--green);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.12)}
+.logo-icon{font-size:24px;margin-bottom:6px}
+.logo-name{font-size:14px;font-weight:700;color:#fff;line-height:1.3}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.07)}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;border-right:3px solid var(--lime)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.35);line-height:1.7}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--green)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+
+/* Pages */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--green)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+
+/* Card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:13px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#fafcfa}
+.card-title{font-size:13px;font-weight:700;color:var(--green)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-sel{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;background:#fff}
+.f-inp{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;width:130px}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--gray-bg);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:#f5faf5}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-urgent{background:#fef2f2;color:var(--red)}
+.b-soon{background:#fff7ed;color:var(--orange)}
+.b-ok{background:var(--green-light);color:var(--green)}
+.b-contract{background:#e3f0fc;color:var(--blue)}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+.a-green{background:var(--green);color:#fff}
+.a-yellow{background:var(--yellow);color:var(--green)}
+.a-blue{background:var(--blue-light);color:var(--blue)}
+.a-gray{background:var(--gray-bg);color:var(--gray);border:1px solid var(--line)}
+
+/* Report / Estimate page */
+.two-col{display:grid;grid-template-columns:360px 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--green);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.fi,.fs{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--green)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--green);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--green-mid)}
+
+/* Preview */
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#fafcfa}
+.prev-title{font-size:12px;font-weight:700;color:var(--green)}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px}
+
+/* Document */
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid var(--green)}
+.doc-company{font-size:14px;font-weight:700;color:var(--green)}
+.doc-type{font-size:18px;font-weight:700;color:var(--green);text-align:right}
+.doc-to{background:var(--green-light);padding:8px 12px;border-radius:4px;margin-bottom:12px}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;font-size:11px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--green);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--green);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--yellow)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--gray-bg);padding:8px 10px;border-radius:4px;line-height:1.8}
+
+/* Report specific */
+.rep-items{margin:8px 0}
+.rep-item{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--line);font-size:12px}
+.rep-check{width:14px;height:14px;border:2px solid var(--green);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer}
+.rep-check.checked{background:var(--green)}
+.check-mark{color:#fff;font-size:9px;display:none}
+.rep-check.checked .check-mark{display:block}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — アイディーサービス様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🐛</div>
+      <div class="logo-name">アイディーサービス</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="nav-icon">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('contracts',this)">
+        <span class="nav-icon">📋</span>契約・訪問管理
+      </div>
+      <div class="nav-item" onclick="showPage('report',this)">
+        <span class="nav-icon">📄</span>施工報告書作成
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="nav-icon">💴</span>見積書作成
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      株式会社アイディーサービス<br>
+      さいたま市見沼区大谷<br>
+      0120-673-052
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi urgent"><div class="kn">3</div><div class="kl">🔴 今月期限の契約更新</div></div>
+          <div class="kpi warn"><div class="kn">5</div><div class="kl">🟠 今月の定期訪問</div></div>
+          <div class="kpi"><div class="kn">18</div><div class="kl">📋 管理中の契約件数</div></div>
+          <div class="kpi"><div class="kn">4</div><div class="kl">📄 今月作成した報告書</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔴 今月中に対応が必要</span></div>
+          <table class="tbl">
+            <thead><tr><th>顧客名</th><th>業種</th><th>対象害虫</th><th>種別</th><th>期限</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">〇〇飲食チェーン 川口店</div></td>
+                <td>飲食店</td><td>ゴキブリ・ネズミ</td>
+                <td><span class="badge b-urgent">🔴 契約更新</span></td>
+                <td style="color:var(--red);font-weight:700">2026-05-15</td>
+                <td><div class="act-cell"><button class="act a-green">📞 連絡</button><button class="act a-yellow" onclick="loadEstimate('〇〇飲食チェーン 川口店')">💴 見積作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">△△保育園</div></td>
+                <td>保育園</td><td>ゴキブリ・アリ</td>
+                <td><span class="badge b-soon">🟠 定期訪問</span></td>
+                <td style="color:var(--orange);font-weight:700">2026-05-20</td>
+                <td><div class="act-cell"><button class="act a-green">📞 連絡</button><button class="act a-blue" onclick="loadReport('△△保育園')">📄 報告書作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">□□スーパー 大宮店</div></td>
+                <td>スーパー</td><td>ネズミ・ゴキブリ</td>
+                <td><span class="badge b-urgent">🔴 契約更新</span></td>
+                <td style="color:var(--red);font-weight:700">2026-05-28</td>
+                <td><div class="act-cell"><button class="act a-green">📞 連絡</button><button class="act a-yellow" onclick="loadEstimate('□□スーパー 大宮店')">💴 見積作成</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">📅 今月の定期訪問スケジュール</span></div>
+          <table class="tbl">
+            <thead><tr><th>訪問予定日</th><th>顧客名</th><th>業種</th><th>対象害虫</th><th>担当</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>2026/05/08</td><td style="font-weight:700">◇◇病院</td><td>病院</td><td>ゴキブリ・ハエ</td><td>田中</td><td><div class="act-cell"><button class="act a-blue" onclick="loadReport('◇◇病院')">📄 報告書作成</button></div></td></tr>
+              <tr><td>2026/05/12</td><td style="font-weight:700">△△保育園</td><td>保育園</td><td>ゴキブリ・アリ</td><td>鈴木</td><td><div class="act-cell"><button class="act a-blue" onclick="loadReport('△△保育園')">📄 報告書作成</button></div></td></tr>
+              <tr><td>2026/05/19</td><td style="font-weight:700">〇〇倉庫 浦和</td><td>倉庫</td><td>ネズミ</td><td>田中</td><td><div class="act-cell"><button class="act a-blue" onclick="loadReport('〇〇倉庫 浦和')">📄 報告書作成</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Contracts -->
+      <div class="page" id="page-contracts">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">契約・定期訪問管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterContracts(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 更新期限迫る</option>
+                <option value="visit">🟠 訪問予定あり</option>
+                <option value="ok">🟢 問題なし</option>
+              </select>
+              <input class="f-inp" placeholder="顧客名で検索..." oninput="searchContracts(this.value)"/>
+            </div>
+          </div>
+          <table class="tbl" id="contractTable">
+            <thead><tr><th>顧客名</th><th>業種</th><th>対象害虫</th><th>契約頻度</th><th>次回訪問</th><th>契約更新</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody id="contractBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">📄 施工報告書 作成</div>
+            <div class="fg"><label>顧客名</label><input class="fi" id="repClient" placeholder="例：〇〇飲食店"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>施工日</label><input class="fi" type="date" id="repDate"/></div>
+              <div class="fg"><label>担当者</label><input class="fi" id="repStaff" placeholder="例：田中"/></div>
+            </div>
+            <div class="fg"><label>施設種別</label>
+              <select class="fs" id="repFacility">
+                <option value="">-- 選択 --</option>
+                <option>飲食店・飲食チェーン</option>
+                <option>スーパー・食品販売店</option>
+                <option>病院・クリニック</option>
+                <option>保育園・幼稚園・学校</option>
+                <option>老人ホーム・介護施設</option>
+                <option>倉庫・工場</option>
+                <option>オフィスビル・商業施設</option>
+                <option>ホテル・宿泊施設</option>
+                <option>一般住宅</option>
+              </select>
+            </div>
+            <div class="fg"><label>対象害虫</label>
+              <select class="fs" id="repPest">
+                <option value="">-- 選択 --</option>
+                <option>ゴキブリ</option>
+                <option>ネズミ</option>
+                <option>ハチ・アシナガバチ</option>
+                <option>アリ</option>
+                <option>ハエ・コバエ</option>
+                <option>ダニ・ノミ</option>
+                <option>シロアリ</option>
+                <option>ゴキブリ・ネズミ（複合）</option>
+              </select>
+            </div>
+            <div class="fg"><label>施工方法</label>
+              <select class="fs" id="repMethod">
+                <option value="">-- 選択 --</option>
+                <option>毒餌剤（ベイト）設置</option>
+                <option>粘着トラップ設置・回収</option>
+                <option>薬剤散布（ULV）</option>
+                <option>燻煙処理</option>
+                <option>ネズミ捕獲器設置</option>
+                <option>巣の除去・物理的駆除</option>
+                <option>特殊消毒・消臭処理</option>
+              </select>
+            </div>
+            <div class="fg"><label>施工結果・所見</label>
+              <select class="fs" id="repResult">
+                <option>発生なし（良好）</option>
+                <option>軽微な発生あり・処置済み</option>
+                <option>中程度の発生・継続監視要</option>
+                <option>多数発生・要対応</option>
+              </select>
+            </div>
+            <div class="fg"><label>備考・次回推奨</label><input class="fi" id="repNote" placeholder="例：厨房排水溝付近に集中"/></div>
+            <button class="gen-btn" onclick="generateReport()">施工報告書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">報告書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="repPdfBtn" onclick="downloadReportPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="repEmpty">← 左で施工内容を入力して<br>「施工報告書を作成する」を押してください</div>
+              <div class="doc" id="repDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">株式会社アイディーサービス</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市見沼区大谷1708<br>TEL: 0120-673-052　info@ids-gaichu.jp</div>
+                  </div>
+                  <div><div class="doc-type">施 工 報 告 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="repDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">施工先</div><div class="tn" id="repDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施設種別：<strong id="repDocFacility"></strong></div>
+                  <div>担当者：<strong id="repDocStaff"></strong></div>
+                  <div>対象害虫：<strong id="repDocPest"></strong></div>
+                  <div>施工方法：<strong id="repDocMethod"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>確認項目</th><th>結果</th></tr></thead>
+                  <tbody id="repCheckRows"></tbody>
+                </table>
+                <div style="margin-bottom:10px">
+                  <div style="font-size:11px;font-weight:700;color:var(--green);margin-bottom:4px">施工結果・総合評価</div>
+                  <div style="background:var(--green-light);padding:8px 10px;border-radius:4px;font-size:12px;font-weight:700" id="repDocResult"></div>
+                </div>
+                <div class="doc-note" id="repDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>顧客名</label><input class="fi" id="estClient" placeholder="例：〇〇飲食店"/></div>
+            <div class="fg"><label>施設種別</label>
+              <select class="fs" id="estFacility">
+                <option value="">-- 選択 --</option>
+                <option value="restaurant">飲食店・飲食チェーン</option>
+                <option value="super">スーパー・食品販売店</option>
+                <option value="hospital">病院・クリニック</option>
+                <option value="nursery">保育園・幼稚園・学校</option>
+                <option value="elderly">老人ホーム・介護施設</option>
+                <option value="warehouse">倉庫・工場</option>
+                <option value="office">オフィス・商業施設</option>
+                <option value="home">一般住宅</option>
+              </select>
+            </div>
+            <div class="fg"><label>駆除対象</label>
+              <select class="fs" id="estPest">
+                <option value="">-- 選択 --</option>
+                <option value="cockroach">ゴキブリ駆除</option>
+                <option value="mouse">ネズミ駆除</option>
+                <option value="bee">ハチ・アシナガバチ駆除</option>
+                <option value="ant">アリ駆除</option>
+                <option value="fly">ハエ・コバエ対策</option>
+                <option value="termite">シロアリ駆除</option>
+                <option value="combo">ゴキブリ＋ネズミ（複合）</option>
+                <option value="disinfect">特殊消毒・消臭</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>面積（㎡）</label><input class="fi" type="number" id="estArea" placeholder="例：100"/></div>
+              <div class="fg"><label>契約種別</label>
+                <select class="fs" id="estContract">
+                  <option value="spot">スポット（1回）</option>
+                  <option value="monthly">定期契約（月1回）</option>
+                  <option value="quarterly">定期契約（3ヶ月1回）</option>
+                  <option value="annual">年間契約（年1回）</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：厨房・倉庫重点的に"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" onclick="downloadEstimatePDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← 左で工事内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">株式会社アイディーサービス</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市見沼区大谷1708<br>TEL: 0120-673-052　info@ids-gaichu.jp</div>
+                  </div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施設種別：<strong id="estDocFacility"></strong></div>
+                  <div>契約種別：<strong id="estDocContract"></strong></div>
+                  <div>対象害虫：<strong id="estDocPest"></strong></div>
+                  <div>施工面積：<strong id="estDocArea"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>サービス内容</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total">
+                  <span class="tl">合計金額（税込）</span>
+                  <span class="tv" id="estTotal"></span>
+                </div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+const todayStr = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('todayLabel').textContent = todayStr;
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',contracts:'契約・訪問管理',report:'施工報告書作成',estimate:'見積書作成'};
+  document.getElementById('pageTitle').textContent=titles[id];
+}
+
+// 契約データ
+const contracts=[
+  {name:'〇〇飲食チェーン 川口店',type:'飲食店',pest:'ゴキブリ・ネズミ',freq:'月1回',nextVisit:'2026-05-12',renewal:'2026-05-15',status:'urgent'},
+  {name:'△△保育園',type:'保育園',pest:'ゴキブリ・アリ',freq:'3ヶ月1回',nextVisit:'2026-05-20',renewal:'2026-08-01',status:'visit'},
+  {name:'□□スーパー 大宮店',type:'スーパー',pest:'ネズミ・ゴキブリ',freq:'月2回',nextVisit:'2026-05-08',renewal:'2026-05-28',status:'urgent'},
+  {name:'◇◇病院',type:'病院',pest:'ゴキブリ・ハエ',freq:'月1回',nextVisit:'2026-05-08',renewal:'2026-10-01',status:'visit'},
+  {name:'〇〇ホテル',type:'ホテル',pest:'ゴキブリ・ダニ',freq:'月1回',nextVisit:'2026-05-25',renewal:'2026-12-01',status:'visit'},
+  {name:'△△倉庫 浦和',type:'倉庫',pest:'ネズミ',freq:'3ヶ月1回',nextVisit:'2026-05-19',renewal:'2026-09-01',status:'visit'},
+  {name:'□□老人ホーム',type:'老人ホーム',pest:'ゴキブリ',freq:'月1回',nextVisit:'2026-06-10',renewal:'2026-11-01',status:'ok'},
+  {name:'◇◇小学校',type:'学校',pest:'ハチ・アリ',freq:'年1回',nextVisit:'2026-07-01',renewal:'2027-03-01',status:'ok'},
+];
+const sLabel={urgent:'🔴 更新期限迫る',visit:'🟠 訪問予定あり',ok:'🟢 問題なし'};
+const sClass={urgent:'b-urgent',visit:'b-soon',ok:'b-ok'};
+
+function renderContracts(list){
+  document.getElementById('contractBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name}</div></td>
+      <td>${c.type}</td><td style="font-size:11px">${c.pest}</td>
+      <td><span class="badge b-contract">${c.freq}</span></td>
+      <td style="font-size:11px">${c.nextVisit}</td>
+      <td style="font-size:11px;${c.status==='urgent'?'color:var(--red);font-weight:700':''}">${c.renewal}</td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-green">📞</button>
+        <button class="act a-blue" onclick="loadReport('${c.name}')">📄 報告書</button>
+        <button class="act a-yellow" onclick="loadEstimate('${c.name}')">💴 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderContracts(contracts);
+function filterContracts(v){renderContracts(v==='all'?contracts:contracts.filter(c=>c.status===v));}
+function searchContracts(v){renderContracts(v?contracts.filter(c=>c.name.includes(v)):contracts);}
+
+// 報告書ページに移動
+function loadReport(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='施工報告書作成';
+  document.getElementById('repClient').value=name;
+  document.getElementById('repDate').value=today.toISOString().split('T')[0];
+}
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+
+// 施工報告書生成
+function generateReport(){
+  const client=document.getElementById('repClient').value||'　';
+  const date=document.getElementById('repDate').value||today.toISOString().split('T')[0];
+  const staff=document.getElementById('repStaff').value||'　';
+  const facility=document.getElementById('repFacility').value||'　';
+  const pest=document.getElementById('repPest').value||'　';
+  const method=document.getElementById('repMethod').value||'　';
+  const result=document.getElementById('repResult').value;
+  const note=document.getElementById('repNote').value;
+  if(!client.trim()){alert('顧客名を入力してください');return;}
+
+  const checkItems=[
+    '施工前 現地確認・害虫発生状況の確認',
+    '対象エリアへの薬剤・トラップ設置完了',
+    '食品・什器への薬剤付着なし',
+    '従業員・利用者への安全確認',
+    '施工後の清掃・原状回復',
+    '次回点検推奨日の案内',
+  ];
+
+  document.getElementById('repDocDate').textContent='作成日：'+new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('repDocClient').textContent=client+' 御中';
+  document.getElementById('repDocFacility').textContent=facility;
+  document.getElementById('repDocStaff').textContent=staff;
+  document.getElementById('repDocPest').textContent=pest;
+  document.getElementById('repDocMethod').textContent=method;
+  document.getElementById('repDocResult').textContent=result;
+  document.getElementById('repCheckRows').innerHTML=checkItems.map(i=>`<tr><td>${i}</td><td style="color:var(--green);font-weight:700">✓ 完了</td></tr>`).join('');
+  document.getElementById('repDocNote').textContent=(note?'所見・備考：'+note+'\n':'')+'・本報告書は施工完了の証明書としてご活用ください。\n・次回定期点検の日程についてはご連絡いたします。\n　株式会社アイディーサービス　担当：'+staff;
+
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+}
+
+// 見積書生成
+const pestPrices={
+  cockroach:{name:'ゴキブリ駆除',base:15000,per:80},
+  mouse:{name:'ネズミ駆除',base:20000,per:120},
+  bee:{name:'ハチ・アシナガバチ駆除',base:18000,per:0},
+  ant:{name:'アリ駆除',base:12000,per:60},
+  fly:{name:'ハエ・コバエ対策',base:10000,per:50},
+  termite:{name:'シロアリ駆除',base:30000,per:200},
+  combo:{name:'ゴキブリ＋ネズミ（複合）',base:28000,per:150},
+  disinfect:{name:'特殊消毒・消臭処理',base:20000,per:100},
+};
+const contractMult={spot:1,monthly:0.85,quarterly:0.9,annual:0.95};
+const contractLabel={spot:'スポット（1回）',monthly:'定期契約（月1回）',quarterly:'定期契約（3ヶ月1回）',annual:'年間契約（年1回）'};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const facilityVal=document.getElementById('estFacility').value;
+  const facilityText=document.getElementById('estFacility').options[document.getElementById('estFacility').selectedIndex].text;
+  const pestVal=document.getElementById('estPest').value;
+  const area=parseInt(document.getElementById('estArea').value)||50;
+  const contractVal=document.getElementById('estContract').value||'spot';
+  const note=document.getElementById('estNote').value;
+  if(!pestVal){alert('駆除対象を選択してください');return;}
+
+  const pest=pestPrices[pestVal];
+  const mul=contractMult[contractVal]||1;
+  const base=Math.floor(pest.base*mul);
+  const areaFee=Math.floor(pest.per*area*mul);
+  const sub=base+areaFee;
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+30);
+
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 御中';
+  document.getElementById('estDocFacility').textContent=facilityText||'　';
+  document.getElementById('estDocContract').textContent=contractLabel[contractVal];
+  document.getElementById('estDocPest').textContent=pest.name;
+  document.getElementById('estDocArea').textContent=area+'㎡';
+
+  let rows=`<tr><td>${pest.name}　基本料金</td><td style="text-align:right">¥${pest.base.toLocaleString()}</td><td style="text-align:right">¥${base.toLocaleString()}</td></tr>`;
+  if(pest.per>0) rows+=`<tr><td>面積加算料金（${area}㎡ × ¥${pest.per}）</td><td style="text-align:right">¥${pest.per.toLocaleString()}/㎡</td><td style="text-align:right">¥${areaFee.toLocaleString()}</td></tr>`;
+  if(mul<1) rows+=`<tr style="background:var(--green-light)"><td>定期契約割引（${Math.round((1-mul)*100)}%OFF）</td><td></td><td style="text-align:right;color:var(--green)">適用済み</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td style="font-weight:500">小計</td><td></td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td>消費税（10%）</td><td></td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estRows').innerHTML=rows;
+  document.getElementById('estTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・見積金額は有効期限内にご連絡ください。\n・定期契約の場合、初回施工前にご契約書をご確認いただきます。\n・施設の規模・状況により金額が変わる場合があります。';
+
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+
+function downloadReportPDF(){alert('PDFダウンロード機能（デモ）\n実際のシステムでは施工報告書がPDFで保存されます');}
+function downloadEstimatePDF(){alert('PDFダウンロード機能（デモ）\n実際のシステムでは見積書がPDFで保存されます');}
+</script>
+</body>
+</html>

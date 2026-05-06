@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>業務効率化ご提案｜有限会社増渕電気様</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --blue:#0057a8;
+  --blue-mid:#1976d2;
+  --blue-light:#e3f0fc;
+  --sky:#f0f7ff;
+  --amber:#f59e0b;
+  --amber-light:#fffbeb;
+  --ink:#1a1a2e;
+  --gray:#5a6575;
+  --line:#d0dce8;
+  --red:#dc2626;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:#fff;line-height:1.7;-webkit-font-smoothing:antialiased}
+.container{max-width:960px;margin:0 auto;padding:0 24px}
+
+/* Notice */
+.notice{background:#fffbeb;border-bottom:2px solid var(--amber);text-align:center;padding:10px;font-size:12px;color:#92400e}
+
+/* Header */
+header{background:#fff;border-bottom:3px solid var(--blue);padding:0}
+.header-inner{display:flex;align-items:stretch;justify-content:space-between;min-height:64px}
+.header-left{display:flex;align-items:center;gap:16px;padding:12px 0}
+.header-logo{width:48px;height:48px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700;text-align:center;line-height:1.3;flex-shrink:0}
+.header-title{font-size:15px;font-weight:700;color:var(--blue);line-height:1.4}
+.header-title small{display:block;font-size:11px;font-weight:400;color:var(--gray);margin-top:2px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-badge{background:var(--blue-light);color:var(--blue);font-size:11px;font-weight:700;padding:4px 12px;border-radius:4px;border:1px solid var(--blue)}
+.from-label{font-size:11px;color:var(--gray)}
+
+/* Hero */
+.hero{background:var(--sky);border-bottom:1px solid var(--line);padding:48px 0 40px}
+.hero-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--blue);letter-spacing:.1em;margin-bottom:16px;background:var(--blue-light);padding:6px 14px;border-radius:4px}
+.hero h1{font-size:clamp(22px,3vw,34px);font-weight:700;color:var(--ink);line-height:1.5;margin-bottom:16px}
+.hero h1 em{font-style:normal;color:var(--blue)}
+.hero h1 strong{color:var(--amber);background:var(--amber-light);padding:0 4px;border-radius:3px}
+.hero-sub{font-size:15px;color:var(--gray);max-width:640px;line-height:1.9;margin-bottom:32px}
+.hero-stats{display:flex;gap:24px;flex-wrap:wrap}
+.stat{background:#fff;border:1px solid var(--line);border-radius:8px;padding:16px 24px;text-align:center;min-width:120px}
+.stat .num{font-size:28px;font-weight:700;color:var(--red);line-height:1}
+.stat .unit{font-size:11px;color:var(--gray);margin-top:4px}
+.stat .label{font-size:12px;color:var(--ink);margin-top:6px;font-weight:500}
+
+/* Section */
+section{padding:60px 0}
+.sec-label{font-size:11px;letter-spacing:.2em;font-weight:700;color:var(--blue);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.sec-label::after{content:"";flex:1;height:1px;background:var(--line)}
+.sec-title{font-size:clamp(20px,2.5vw,26px);font-weight:700;color:var(--ink);margin-bottom:12px}
+.sec-sub{font-size:14px;color:var(--gray);line-height:1.9}
+
+/* Pain */
+.pain{background:#fff}
+.pain-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:16px;margin-top:32px}
+.pain-card{border:1px solid #fecaca;border-left:4px solid var(--red);border-radius:8px;padding:20px;background:#fff}
+.pain-icon{font-size:22px;margin-bottom:8px}
+.pain-name{font-size:14px;font-weight:700;color:var(--red);margin-bottom:6px}
+.pain-desc{font-size:12px;color:var(--gray);line-height:1.7;margin-bottom:10px}
+.pain-time{font-size:20px;font-weight:700;color:var(--red)}
+.pain-time span{font-size:11px;font-weight:400;color:var(--gray)}
+
+/* Demo */
+.demo{background:var(--sky);border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.demo-wrap{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:32px}
+@media(max-width:680px){.demo-wrap{grid-template-columns:1fr}}
+.panel{border-radius:8px;overflow:hidden;border:1px solid var(--line);background:#fff}
+.panel-head{padding:14px 20px;font-size:13px;font-weight:700;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--line)}
+.panel-head.before{background:#fef2f2;color:var(--red)}
+.panel-head.after{background:#eff6ff;color:var(--blue)}
+.panel-body{padding:20px}
+
+/* Before */
+.old-row{margin-bottom:12px}
+.old-row label{font-size:11px;color:var(--gray);display:block;margin-bottom:4px}
+.old-input{width:100%;border:1px solid #d1d5db;border-radius:5px;padding:8px 10px;font-size:13px;font-family:inherit;color:#6b7280;background:#f9fafb}
+.old-note{font-size:10px;color:var(--red);margin-top:3px}
+.old-total{background:#fef2f2;border-radius:6px;padding:12px;text-align:center;margin-top:12px;border:1px dashed #fca5a5}
+.old-total .label{font-size:11px;color:var(--gray)}
+.old-total .value{font-size:18px;font-weight:700;color:var(--gray)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:4px 10px;border-radius:4px;margin-top:10px;font-weight:700}
+.badge.slow{background:#fef2f2;color:var(--red)}
+.badge.fast{background:var(--green-light);color:var(--green)}
+
+/* After */
+.form-label{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:6px;display:block}
+.form-select,.form-number{
+  width:100%;border:2px solid var(--line);border-radius:6px;
+  padding:10px 12px;font-size:14px;font-family:inherit;
+  background:#fff;color:var(--ink);margin-bottom:14px;
+  transition:border-color .15s;
+}
+.form-select:focus,.form-number:focus{outline:none;border-color:var(--blue)}
+.calc-btn{
+  width:100%;background:var(--blue);color:#fff;border:none;
+  padding:13px;border-radius:6px;font-size:14px;font-weight:700;
+  cursor:pointer;font-family:inherit;
+  transition:background .15s,transform .1s;
+  display:flex;align-items:center;justify-content:center;gap:6px;
+}
+.calc-btn:hover{background:var(--blue-mid)}
+.calc-btn:active{transform:scale(.99)}
+
+.result{display:none;margin-top:16px}
+.result.show{display:block}
+.result-head{font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid var(--blue-light)}
+.result-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:12px}
+.result-table th{background:var(--blue-light);color:var(--blue);padding:7px 10px;text-align:left;font-weight:500}
+.result-table td{padding:7px 10px;border-bottom:1px solid var(--line)}
+.result-table tr:last-child td{border:none;background:#f8fafc;font-weight:500}
+.result-total{background:var(--blue);color:#fff;border-radius:6px;padding:14px;text-align:center}
+.result-total .rlabel{font-size:11px;opacity:.8}
+.result-total .amount{font-size:24px;font-weight:700;color:var(--amber)}
+
+/* Compare */
+.compare{background:#fff}
+.compare-grid{display:grid;grid-template-columns:1fr 56px 1fr;gap:0;margin-top:32px;align-items:center;max-width:760px}
+@media(max-width:580px){.compare-grid{grid-template-columns:1fr;gap:16px}}
+.cmp-box{border-radius:8px;padding:28px 20px;text-align:center}
+.cmp-box.before{border:2px solid #fca5a5;background:#fef2f2}
+.cmp-box.after{border:2px solid #86efac;background:var(--green-light)}
+.cmp-label{font-size:11px;font-weight:700;letter-spacing:.1em;margin-bottom:12px}
+.cmp-box.before .cmp-label{color:var(--red)}
+.cmp-box.after .cmp-label{color:var(--green)}
+.cmp-num{font-size:52px;font-weight:700;line-height:1}
+.cmp-box.before .cmp-num{color:var(--red)}
+.cmp-box.after .cmp-num{color:var(--green)}
+.cmp-unit{font-size:13px;color:var(--gray);margin-top:6px}
+.cmp-note{font-size:11px;color:var(--gray);margin-top:10px;line-height:1.7}
+.cmp-arrow{text-align:center;font-size:28px;color:var(--blue)}
+
+/* Features */
+.features{background:var(--sky)}
+.feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-top:32px}
+.feat-card{background:#fff;border:1px solid var(--line);border-radius:8px;padding:24px 20px}
+.feat-tag{display:inline-block;font-size:10px;font-weight:700;background:var(--blue);color:#fff;padding:2px 8px;border-radius:3px;margin-bottom:10px;letter-spacing:.05em}
+.feat-icon{font-size:24px;margin-bottom:10px}
+.feat-name{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px}
+.feat-desc{font-size:12px;color:var(--gray);line-height:1.8}
+
+/* CTA */
+.cta{background:var(--blue);color:#fff;padding:56px 0;text-align:center}
+.cta h2{font-size:22px;font-weight:700;margin-bottom:12px}
+.cta p{font-size:14px;opacity:.85;line-height:1.9;margin-bottom:32px}
+.cta-card{display:inline-block;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);border-radius:8px;padding:24px 40px;text-align:left}
+.cta-from{font-size:11px;opacity:.7;margin-bottom:8px}
+.cta-company{font-size:17px;font-weight:700;margin-bottom:10px}
+.cta-mail{color:var(--amber);font-size:14px}
+.cta-url{font-size:12px;opacity:.7;margin-top:4px}
+
+footer{background:#1a2535;color:rgba(255,255,255,.4);text-align:center;padding:20px;font-size:11px}
+</style>
+</head>
+<body>
+
+<div class="notice">⚠️ このページは業務改善舎が有限会社増渕電気様向けに作成したご提案デモです</div>
+
+<!-- Header -->
+<header>
+  <div class="container header-inner">
+    <div class="header-left">
+      <div class="header-logo">増渕<br>電気<br>様</div>
+      <div class="header-title">
+        有限会社増渕電気 様　業務効率化ご提案
+        <small>見積書・工事報告書の作成時間を大幅に削減する仕組みのご紹介</small>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="from-label">ご提案：</span>
+      <span class="header-badge">業務改善舎 ケンイチ</span>
+    </div>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">⚡ 電気工事業者様向け　業務効率化のご提案</div>
+    <h1>
+      見積書1件に<em>30〜60分</em>かかっていませんか？<br>
+      工事種別を選ぶだけで<strong>3分以内</strong>に完成します。
+    </h1>
+    <p class="hero-sub">
+      EV充電設備・分電盤・LED化・防犯カメラ…種類の多い電気工事こそ、<br>
+      見積書・報告書の作成を仕組み化することで、現場に使える時間が一気に増えます。
+    </p>
+    <div class="hero-stats">
+      <div class="stat">
+        <div class="num">60分</div>
+        <div class="unit">→ 3分</div>
+        <div class="label">見積書1件あたり</div>
+      </div>
+      <div class="stat">
+        <div class="num">12時間</div>
+        <div class="unit">/ 月 削減</div>
+        <div class="label">月20件の場合</div>
+      </div>
+      <div class="stat">
+        <div class="num">0円</div>
+        <div class="unit">相談・見積</div>
+        <div class="label">まず話を聞くだけOK</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pain -->
+<section class="pain">
+  <div class="container">
+    <p class="sec-label">PROBLEM</p>
+    <h2 class="sec-title">電気工事業者が日々感じている「時間の無駄」</h2>
+    <p class="sec-sub">現場仕事が忙しい中、事務作業に追われていませんか？</p>
+    <div class="pain-grid">
+      <div class="pain-card">
+        <div class="pain-icon">📋</div>
+        <div class="pain-name">見積書をゼロから手入力</div>
+        <p class="pain-desc">工事種別ごとに材料費・工賃を毎回調べて計算。ミスも起きやすい。</p>
+        <div class="pain-time">30〜60分 <span>/ 1件</span></div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">📄</div>
+        <div class="pain-name">法人向け完工報告書の作成</div>
+        <p class="pain-desc">施設・マンション向けの報告書はフォーマットが複雑。毎回作り直し。</p>
+        <div class="pain-time">45〜90分 <span>/ 1件</span></div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">📱</div>
+        <div class="pain-name">問い合わせ管理の手間</div>
+        <p class="pain-desc">どのお客様がどの工事を依頼したか、過去履歴を探すのが大変。</p>
+        <div class="pain-time">毎日 <span>積み重なる</span></div>
+      </div>
+      <div class="pain-card">
+        <div class="pain-icon">🔄</div>
+        <div class="pain-name">定期点検フォローの漏れ</div>
+        <p class="pain-desc">過去のお客様への次回点検案内を手動で管理。連絡漏れが出やすい。</p>
+        <div class="pain-time">月数時間 <span>の管理工数</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Demo -->
+<section class="demo">
+  <div class="container">
+    <p class="sec-label">DEMO</p>
+    <h2 class="sec-title">実際に触ってみてください</h2>
+    <p class="sec-sub">「今まで」と「仕組み化後」の違いを体感していただけます。</p>
+    <div class="demo-wrap">
+
+      <!-- Before -->
+      <div class="panel">
+        <div class="panel-head before">❌ 今まで：毎回手入力</div>
+        <div class="panel-body">
+          <div class="old-row">
+            <label>工事名（手入力）</label>
+            <input class="old-input" type="text" placeholder="EV充電コンセント設置工事　手入力...">
+          </div>
+          <div class="old-row">
+            <label>材料費（都度調べて入力）</label>
+            <input class="old-input" type="text" placeholder="コンセント本体：¥? 配線材：¥?...">
+            <div class="old-note">※メーカーサイトで型番・価格を都度確認</div>
+          </div>
+          <div class="old-row">
+            <label>工賃（毎回計算）</label>
+            <input class="old-input" type="text" placeholder="作業員×時間×単価…手計算">
+          </div>
+          <div class="old-row">
+            <label>消費税・諸経費（手計算）</label>
+            <input class="old-input" type="text" placeholder="合計×1.1 = ? ← ミスが出やすい">
+          </div>
+          <div class="old-total">
+            <div class="label">合計金額</div>
+            <div class="value">手計算で確認中…</div>
+          </div>
+          <div style="text-align:center">
+            <span class="badge slow">⏱ 平均 40〜60分 / 1件</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- After -->
+      <div class="panel">
+        <div class="panel-head after">✅ 仕組み化後：3ステップで完成</div>
+        <div class="panel-body">
+          <label class="form-label">① 工事の種類を選ぶ</label>
+          <select class="form-select" id="kojiType">
+            <option value="">-- 選んでください --</option>
+            <option value="ev">EV充電コンセント設置工事</option>
+            <option value="bundenban">分電盤交換工事</option>
+            <option value="led_house">LED照明工事（住宅）</option>
+            <option value="led_corp">LED照明工事（法人・施設）</option>
+            <option value="camera">防犯カメラ設置工事</option>
+            <option value="intercom">TVドアホン交換工事</option>
+            <option value="kansin">感震ブレーカー設置工事</option>
+          </select>
+
+          <label class="form-label">② 数量・台数を入力</label>
+          <input type="number" class="form-number" id="qty" placeholder="例：2（台・箇所）" min="1" max="99"/>
+
+          <button class="calc-btn" onclick="calc()">⚡ 見積書を自動生成する</button>
+
+          <div class="result" id="result">
+            <p class="result-head">📋 自動生成された見積書</p>
+            <table class="result-table">
+              <thead><tr><th>項目</th><th style="text-align:right">金額</th></tr></thead>
+              <tbody id="resultRows"></tbody>
+            </table>
+            <div class="result-total">
+              <div class="rlabel">お見積り合計（税込）</div>
+              <div class="amount" id="totalAmt"></div>
+            </div>
+            <div style="text-align:center;margin-top:10px">
+              <span class="badge fast">⚡ 生成時間：約3秒</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Compare -->
+<section class="compare">
+  <div class="container">
+    <p class="sec-label">EFFECT</p>
+    <h2 class="sec-title">月20件の見積もりで換算すると</h2>
+    <div class="compare-grid">
+      <div class="cmp-box before">
+        <div class="cmp-label">BEFORE　現状</div>
+        <div class="cmp-num">800</div>
+        <div class="cmp-unit">分 / 月（約13時間）</div>
+        <div class="cmp-note">20件 × 40分<br>毎月丸1日以上を見積書作成に</div>
+      </div>
+      <div class="cmp-arrow">→</div>
+      <div class="cmp-box after">
+        <div class="cmp-label">AFTER　仕組み化後</div>
+        <div class="cmp-num">60</div>
+        <div class="cmp-unit">分 / 月（約1時間）</div>
+        <div class="cmp-note">20件 × 3分<br>残り12時間を現場・営業・休息へ</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Features -->
+<section class="features">
+  <div class="container">
+    <p class="sec-label">WHAT WE CAN DO</p>
+    <h2 class="sec-title">整備できる仕組みの例</h2>
+    <div class="feat-grid">
+      <div class="feat-card">
+        <span class="feat-tag">見積書</span>
+        <div class="feat-icon">📋</div>
+        <div class="feat-name">見積書自動生成</div>
+        <p class="feat-desc">工事種別・数量を選ぶだけで材料費・工賃・消費税を自動計算。PDF出力まで対応。</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-tag">報告書</span>
+        <div class="feat-icon">📄</div>
+        <div class="feat-name">工事完了報告書の自動作成</div>
+        <p class="feat-desc">施設・マンション向けのフォーマットを整備。写真を貼るだけで完成する形に。</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-tag">顧客管理</span>
+        <div class="feat-icon">👥</div>
+        <div class="feat-name">顧客・工事履歴の一元管理</div>
+        <p class="feat-desc">お客様ごとの工事履歴を管理。次回点検の時期を自動でリスト化する仕組みも。</p>
+      </div>
+      <div class="feat-card">
+        <span class="feat-tag">スケジュール</span>
+        <div class="feat-icon">📅</div>
+        <div class="feat-name">工事スケジュール管理</div>
+        <p class="feat-desc">問い合わせから施工日程まで一元管理。ダブルブッキングや漏れを防ぎます。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta">
+  <div class="container">
+    <h2>まずは現状の業務フローを聞かせてください</h2>
+    <p>「こんなことが面倒だ」という声から始まります。<br>何から整えるべきかを一緒に考えます。相談・見積もりは無料です。</p>
+    <div class="cta-card">
+      <div class="cta-from">本ページのご提案者</div>
+      <div class="cta-company">業務改善舎　ケンイチ</div>
+      <div class="cta-mail">forgeai.jp@gmail.com</div>
+      <div class="cta-url">https://gyomu-kaizensha.com</div>
+    </div>
+  </div>
+</section>
+
+<footer>業務改善舎　有限会社増渕電気様向けご提案デモ（正式なサービス画面のサンプルです）</footer>
+
+<script>
+const P={
+  ev:{name:"EV充電コンセント設置工事",items:[
+    {n:"EV用充電コンセント本体（200V）",u:22000},
+    {n:"専用回路配線工事",u:18000},
+    {n:"分電盤接続・ブレーカー増設",u:8000},
+    {n:"作業費・諸経費",u:12000}]},
+  bundenban:{name:"分電盤交換工事",items:[
+    {n:"スマート分電盤本体",u:45000},
+    {n:"既存分電盤撤去・処分",u:8000},
+    {n:"配線接続・動作確認",u:15000},
+    {n:"作業費・諸経費",u:10000}]},
+  led_house:{name:"LED照明交換工事（住宅）",items:[
+    {n:"LED照明器具（1箇所）",u:8000},
+    {n:"既存器具取外し・取付",u:5000},
+    {n:"配線確認・動作試験",u:2000},
+    {n:"諸経費",u:3000}]},
+  led_corp:{name:"LED照明工事（法人・高天井）",items:[
+    {n:"高天井用LED器具",u:35000},
+    {n:"高所作業費（脚立・足場）",u:15000},
+    {n:"既存器具撤去・配線接続",u:8000},
+    {n:"施工管理・完工報告書作成",u:12000}]},
+  camera:{name:"防犯カメラ設置工事",items:[
+    {n:"防犯カメラ本体（1台）",u:25000},
+    {n:"録画装置（DVR）",u:30000},
+    {n:"配線・設置工事",u:20000},
+    {n:"設定・動作確認",u:8000}]},
+  intercom:{name:"TVドアホン交換工事",items:[
+    {n:"TVドアホン本体セット",u:28000},
+    {n:"既存機器撤去・新規設置",u:12000},
+    {n:"動作確認・操作説明",u:5000},
+    {n:"諸経費",u:3000}]},
+  kansin:{name:"感震ブレーカー設置工事",items:[
+    {n:"感震ブレーカー本体",u:15000},
+    {n:"分電盤取付工事",u:8000},
+    {n:"動作試験・ご説明",u:4000},
+    {n:"諸経費",u:3000}]}
+};
+
+function calc(){
+  const t=document.getElementById('kojiType').value;
+  const q=parseInt(document.getElementById('qty').value)||1;
+  if(!t){alert('工事の種類を選んでください');return;}
+  const d=P[t];let sub=0,rows='';
+  d.items.forEach(i=>{
+    const a=i.u*q;sub+=a;
+    rows+=`<tr><td>${i.n}</td><td style="text-align:right">¥${a.toLocaleString()}</td></tr>`;
+  });
+  const tax=Math.floor(sub*.1),total=sub+tax;
+  rows+=`<tr><td>小計</td><td style="text-align:right">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('resultRows').innerHTML=rows;
+  document.getElementById('totalAmt').textContent='¥'+total.toLocaleString();
+  const r=document.getElementById('result');
+  r.classList.add('show');
+  r.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+</script>
+</body>
+</html>

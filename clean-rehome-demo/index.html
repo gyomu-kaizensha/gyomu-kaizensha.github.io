@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Clean&Re:Home 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --pink:#e8186e;
+  --pink-mid:#c8106a;
+  --pink-light:#fce8f2;
+  --pink-pale:#fff8fb;
+  --green:#3aaa35;
+  --green-dark:#2a8a28;
+  --green-light:#edfaed;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --yellow:#f5c800;
+  --gray-bg:#f8f8f8;
+  --ink:#222222;
+  --gray:#666666;
+  --line:#e8e8e8;
+  --sidebar:#ffffff;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#1a1a1a;color:#cccccc;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--sidebar);border-right:1px solid var(--line);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid var(--line)}
+.logo-icon{font-size:26px;margin-bottom:6px}
+.logo-name{font-size:13px;font-weight:700;color:var(--pink);line-height:1.4}
+.logo-sub{font-size:10px;color:var(--gray);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:#aaa;letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;color:var(--gray);cursor:pointer;transition:background .15s;border-radius:0}
+.nav-item:hover{background:var(--green-light);color:var(--green-dark)}
+.nav-item.active{background:var(--green-light);color:var(--green-dark);font-weight:700;border-right:3px solid var(--green)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid var(--line);font-size:10px;color:#aaa;line-height:1.7}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--pink)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--pink)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi.season .kn{color:var(--pink-mid)}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:var(--pink-pale)}
+.card-title{font-size:13px;font-weight:700;color:var(--pink-mid)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.f-sel{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;background:#fff}
+.f-inp{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;width:130px}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--pink-pale);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:var(--pink-pale)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-red{background:#fef2f2;color:var(--red)}
+.b-orange{background:#fff7ed;color:var(--orange)}
+.b-green{background:var(--green-light);color:var(--green)}
+.b-pink{background:var(--pink-light);color:var(--pink)}
+.b-gray{background:#f5f5f5;color:var(--gray)}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.a-pink{background:var(--pink);color:#fff}
+.a-green{background:var(--green);color:#fff}
+.a-yellow{background:var(--yellow);color:var(--ink)}
+.a-ghost{background:var(--pink-light);color:var(--pink);border:1px solid var(--line)}
+.two-col{display:grid;grid-template-columns:370px 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--pink);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px}
+.fi,.fs{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--pink)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--pink);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--pink-mid)}
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:var(--pink-pale)}
+.prev-title{font-size:12px;font-weight:700;color:var(--pink)}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px;line-height:2}
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--pink)}
+.doc-company{font-size:14px;font-weight:700;color:var(--pink)}
+.doc-type{font-size:17px;font-weight:700;color:var(--pink);text-align:right}
+.doc-to{background:var(--pink-light);padding:8px 12px;border-radius:4px;margin-bottom:12px}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:11px;background:var(--gray-bg);padding:8px 10px;border-radius:4px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--pink);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--pink);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--yellow)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--gray-bg);padding:8px 10px;border-radius:4px;line-height:1.8}
+.check-section{margin-bottom:10px}
+.check-title{font-size:11px;font-weight:700;color:var(--pink);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--line)}
+.check-items{display:grid;grid-template-columns:1fr 1fr;gap:3px}
+.check-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.ck{color:var(--green);font-weight:700}
+</style>
+</head>
+<body>
+<div class="demo-bar">⚠️ デモ画面 — Clean&Re:Home様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">✨</div>
+      <div class="logo-name">Clean & Re:Home</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span>ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('customers',this)"><span class="nav-icon">👥</span>顧客・リピート管理</div>
+      <div class="nav-item" onclick="showPage('estimate',this)"><span class="nav-icon">💴</span>見積書作成</div>
+      <div class="nav-item" onclick="showPage('checklist',this)"><span class="nav-icon">✅</span>施工チェックリスト</div>
+    </nav>
+    <div class="sidebar-footer">
+      Clean & Re:Home<br>埼玉県朝霞市三原3-29-10-603<br>090-5525-9055
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi season"><div class="kn">5</div><div class="kl">🌸 今季エアコン案内待ち</div></div>
+          <div class="kpi urgent"><div class="kn">3</div><div class="kl">🔴 1年以上未接触の顧客</div></div>
+          <div class="kpi warn"><div class="kn">4</div><div class="kl">📅 今月の予約件数</div></div>
+          <div class="kpi"><div class="kn">20</div><div class="kl">👥 管理中の顧客数</div></div>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">🌸 エアコンクリーニング案内を送るべきお客様（夏前が旬）</span></div>
+          <div style="padding:10px 18px;font-size:11px;color:var(--orange);background:#fff7ed;border-bottom:1px solid var(--line)">
+            💡 夏前（5〜6月）はエアコンクリーニングの繁忙期。昨年施工のお客様に先に案内を送ると予約が早く埋まります。
+          </div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>前回施工</th><th>施工内容</th><th>経過</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td><div style="font-weight:700">高橋 美恵子 様</div><div style="font-size:10px;color:var(--gray)">朝霞市XX1丁目</div></td><td>2025-05-22</td><td>エアコン洗浄（2台）</td><td><span class="badge b-pink">🌸 約1年</span></td><td><div class="act-cell"><button class="act a-pink">📞 電話</button><button class="act a-ghost" onclick="loadEstimate('高橋 美恵子')">💴 見積</button></div></td></tr>
+              <tr><td><div style="font-weight:700">中村 典子 様</div><div style="font-size:10px;color:var(--gray)">志木市XX2丁目</div></td><td>2025-06-15</td><td>エアコン（1台）+浴室</td><td><span class="badge b-pink">🌸 約1年</span></td><td><div class="act-cell"><button class="act a-pink">📞 電話</button><button class="act a-ghost" onclick="loadEstimate('中村 典子')">💴 見積</button></div></td></tr>
+              <tr><td><div style="font-weight:700">小林 裕美 様</div><div style="font-size:10px;color:var(--gray)">練馬区XX3丁目</div></td><td>2025-04-10</td><td>エアコン（2台）+換気扇</td><td><span class="badge b-orange">🟠 約1年</span></td><td><div class="act-cell"><button class="act a-pink">📞 電話</button><button class="act a-ghost" onclick="loadEstimate('小林 裕美')">💴 見積</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <div class="card-head"><span class="card-title">📅 今月の施工予約</span></div>
+          <table class="tbl">
+            <thead><tr><th>予約日</th><th>お客様名</th><th>施工内容</th><th>エリア</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>2026/05/10</td><td style="font-weight:700">渡辺 雅子 様</td><td>セットメニュー（3点）</td><td>朝霞市</td><td><span class="badge b-green">🟢 確定</span></td><td><button class="act a-green" onclick="loadChecklist('渡辺 雅子')">✅ チェックリスト</button></td></tr>
+              <tr><td>2026/05/17</td><td style="font-weight:700">伊藤 春子 様</td><td>エアコン（2台）</td><td>志木市</td><td><span class="badge b-green">🟢 確定</span></td><td><button class="act a-green" onclick="loadChecklist('伊藤 春子')">✅ チェックリスト</button></td></tr>
+              <tr><td>2026/05/24</td><td style="font-weight:700">松本 京子 様</td><td>お引越し前クリーニング</td><td>練馬区</td><td><span class="badge b-pink">🔵 仮予約</span></td><td><button class="act a-green" onclick="loadChecklist('松本 京子')">✅ チェックリスト</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客・リピート管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="season">🌸 今季案内すべき</option>
+                <option value="urgent">🔴 長期未接触</option>
+                <option value="ok">🟢 最近施工済み</option>
+              </select>
+              <input class="f-inp" placeholder="名前で検索..."/>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>エリア</th><th>主な施工</th><th>最終施工日</th><th>経過</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="estClient" placeholder="例：高橋 美恵子"/></div>
+            <div class="fg"><label>施工メニュー</label>
+              <select class="fs" id="estMenu">
+                <option value="">-- 選択 --</option>
+                <option value="ac1">エアコン洗浄クリーニング（1台）</option>
+                <option value="ac2">エアコン洗浄クリーニング（2台）</option>
+                <option value="kitchen">キッチン・台所クリーニング</option>
+                <option value="range">レンジフード・換気扇クリーニング</option>
+                <option value="bath">浴室・お風呂クリーニング</option>
+                <option value="toilet">トイレクリーニング</option>
+                <option value="wash">洗面台・洗面所クリーニング</option>
+                <option value="glass">ガラス・サッシ・網戸クリーニング</option>
+                <option value="set3">セットメニュー（3点）</option>
+                <option value="set4">セットメニュー（4点）</option>
+                <option value="moving">お引越し前後クリーニング（一式）</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>部屋タイプ</label>
+                <select class="fs" id="estRoom">
+                  <option value="1k">1K・1LDK</option>
+                  <option value="2ldk">2LDK</option>
+                  <option value="3ldk">3LDK</option>
+                  <option value="4ldk">4LDK以上</option>
+                </select>
+              </div>
+              <div class="fg"><label>汚れの状態</label>
+                <select class="fs" id="estDirt">
+                  <option value="normal">普通</option>
+                  <option value="heavy">かなり汚れている</option>
+                  <option value="light">比較的きれい</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>割引・オプション</label>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="op1"> リピーター割引（-10%）</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="op2"> 土日祝日作業（+10%）</label>
+              </div>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：ペットあり、マンション等"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← メニューを選んで<br>「見積書を作成する」を押してください</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">Clean & Re:Home</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">埼玉県朝霞市三原3-29-10-603<br>TEL: 090-5525-9055　clean.rehome.c.r.h@gmail.com</div>
+                  </div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施工メニュー：<strong id="estDocMenu"></strong></div>
+                  <div>部屋タイプ：<strong id="estDocRoom"></strong></div>
+                  <div>汚れ状態：<strong id="estDocDirt"></strong></div>
+                  <div>有効期限：<strong id="estDocExp"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>項目</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total"><span class="tl">合計金額（税込）</span><span class="tv" id="estTotal"></span></div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Checklist -->
+      <div class="page" id="page-checklist">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">✅ 施工チェックリスト作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="ckClient" placeholder="例：高橋 美恵子"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>施工日</label><input class="fi" type="date" id="ckDate"/></div>
+              <div class="fg"><label>担当者</label><input class="fi" id="ckStaff" placeholder="例：担当者名"/></div>
+            </div>
+            <div class="fg"><label>施工メニュー</label>
+              <select class="fs" id="ckMenu">
+                <option value="ac">エアコン洗浄クリーニング</option>
+                <option value="kitchen">キッチン・換気扇</option>
+                <option value="bath">浴室・お風呂</option>
+                <option value="toilet">トイレ</option>
+                <option value="set">セットメニュー（複数箇所）</option>
+                <option value="moving">お引越しクリーニング</option>
+              </select>
+            </div>
+            <div class="fg"><label>施工結果</label>
+              <select class="fs" id="ckResult">
+                <option>問題なし・良好に完了</option>
+                <option>一部頑固な汚れ残りあり（次回重点的に）</option>
+                <option>損傷なし・原状確認済み</option>
+              </select>
+            </div>
+            <div class="fg"><label>特記事項</label><input class="fi" id="ckNote" placeholder="例：フィルター交換推奨等"/></div>
+            <button class="gen-btn" onclick="generateChecklist()">チェックリストを作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">施工完了報告書 プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="ckPrintBtn" onclick="window.print()" style="display:none">🖨️ お客様控え印刷</button>
+                <button class="pb pb-pdf" id="ckPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF保存</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="ckEmpty">← 施工内容を入力して<br>「チェックリストを作成する」を押してください</div>
+              <div class="doc" id="ckDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">Clean & Re:Home</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">埼玉県朝霞市三原3-29-10-603<br>TEL: 090-5525-9055</div>
+                  </div>
+                  <div><div class="doc-type" style="font-size:15px">施工完了報告書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="ckDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">施工先</div><div class="tn" id="ckDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施工内容：<strong id="ckDocMenu"></strong></div>
+                  <div>担当者：<strong id="ckDocStaff"></strong></div>
+                  <div>使用洗剤：<strong>エコ対応・環境配慮型</strong></div>
+                  <div>次回目安：<strong id="ckDocNext"></strong></div>
+                </div>
+                <div id="ckCheckSections"></div>
+                <div style="margin:10px 0;background:var(--green-light);padding:8px 12px;border-radius:4px;font-size:12px;font-weight:700;color:var(--green)" id="ckDocResult"></div>
+                <div class="doc-note" id="ckDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const today=new Date();
+document.getElementById('todayLabel').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('ckDate').value=today.toISOString().split('T')[0];
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const t={dashboard:'ダッシュボード',customers:'顧客・リピート管理',estimate:'見積書作成',checklist:'施工チェックリスト'};
+  document.getElementById('pageTitle').textContent=t[id];
+}
+
+const customers=[
+  {name:'高橋 美恵子',area:'朝霞市',work:'エアコン（2台）',last:'2025-05-22',elapsed:'約1年',status:'season'},
+  {name:'中村 典子',area:'志木市',work:'エアコン＋浴室',last:'2025-06-15',elapsed:'約1年',status:'season'},
+  {name:'小林 裕美',area:'練馬区',work:'エアコン（2台）+換気扇',last:'2025-04-10',elapsed:'約1年',status:'season'},
+  {name:'渡辺 雅子',area:'朝霞市',work:'3点セット',last:'2026-04-18',elapsed:'1ヶ月',status:'ok'},
+  {name:'伊藤 春子',area:'志木市',work:'エアコン（2台）',last:'2026-03-10',elapsed:'2ヶ月',status:'ok'},
+  {name:'松本 久美子',area:'川越市',work:'浴室＋トイレ',last:'2024-09-20',elapsed:'1年半以上',status:'urgent'},
+  {name:'田口 幸子',area:'所沢市',work:'エアコン（1台）',last:'2024-12-05',elapsed:'1年半',status:'urgent'},
+];
+const sLabel={season:'🌸 今季案内',urgent:'🔴 長期未接触',ok:'🟢 最近施工済み'};
+const sClass={season:'b-pink',urgent:'b-red',ok:'b-green'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td style="font-weight:700">${c.name} 様</td>
+      <td style="font-size:11px">${c.area}</td>
+      <td style="font-size:11px">${c.work}</td>
+      <td style="font-size:11px">${c.last}</td>
+      <td><span class="badge ${sClass[c.status]}">${c.elapsed}</span></td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-pink">📞</button>
+        <button class="act a-ghost" onclick="loadEstimate('${c.name}')">💴 見積</button>
+        <button class="act a-green" onclick="loadChecklist('${c.name}')">✅</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+function filterCust(v){renderCust(v==='all'?customers:customers.filter(c=>c.status===v));}
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+function loadChecklist(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-checklist').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='施工チェックリスト';
+  document.getElementById('ckClient').value=name;
+}
+
+const menus={
+  ac1:{name:'エアコン洗浄クリーニング（1台）',price:13200},
+  ac2:{name:'エアコン洗浄クリーニング（2台）',price:24200},
+  kitchen:{name:'キッチン・台所クリーニング',price:16500},
+  range:{name:'レンジフード・換気扇クリーニング',price:11000},
+  bath:{name:'浴室・お風呂クリーニング',price:16500},
+  toilet:{name:'トイレクリーニング',price:8800},
+  wash:{name:'洗面台・洗面所クリーニング',price:8800},
+  glass:{name:'ガラス・サッシ・網戸クリーニング',price:11000},
+  set3:{name:'セットメニュー（3点）',price:38000},
+  set4:{name:'セットメニュー（4点）',price:44000},
+  moving:{name:'お引越し前後クリーニング（一式）',price:60000},
+};
+const roomMult={'1k':1,'2ldk':1.1,'3ldk':1.2,'4ldk':1.4};
+const roomLabel={'1k':'1K・1LDK','2ldk':'2LDK','3ldk':'3LDK','4ldk':'4LDK以上'};
+const dirtMult={normal:1,heavy:1.2,light:0.95};
+const dirtLabel={normal:'普通',heavy:'かなり汚れている',light:'比較的きれい'};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const menuVal=document.getElementById('estMenu').value;
+  const room=document.getElementById('estRoom').value;
+  const dirt=document.getElementById('estDirt').value;
+  const op1=document.getElementById('op1').checked;
+  const op2=document.getElementById('op2').checked;
+  const note=document.getElementById('estNote').value;
+  if(!menuVal){alert('施工メニューを選択してください');return;}
+  const m=menus[menuVal];
+  let base=Math.floor(m.price*roomMult[room]*dirtMult[dirt]);
+  if(op1) base=Math.floor(base*0.9);
+  if(op2) base=Math.floor(base*1.1);
+  let items=[{n:m.name,p:base}];
+  if(op1) items.push({n:'リピーター割引（-10%）',p:0,note:true});
+  if(op2) items.push({n:'土日祝日作業料金（+10%）',p:0,note:true});
+  const sub=base;
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+30);
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 様';
+  document.getElementById('estDocMenu').textContent=m.name;
+  document.getElementById('estDocRoom').textContent=roomLabel[room];
+  document.getElementById('estDocDirt').textContent=dirtLabel[dirt];
+  document.getElementById('estDocExp').textContent=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estRows').innerHTML=`<tr><td>${m.name}</td><td style="text-align:right">¥${base.toLocaleString()}</td></tr>`
+  +(op1?`<tr style="background:var(--green-light)"><td>リピーター割引（-10%）適用済み</td><td style="text-align:right;color:var(--green)">-</td></tr>`:'')
+  +(op2?`<tr style="background:#fff7ed"><td>土日祝日作業料金（+10%）適用済み</td><td style="text-align:right;color:var(--orange)">-</td></tr>`:'')
+  +`<tr style="background:var(--gray-bg)"><td style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>
+   <tr style="background:var(--gray-bg)"><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・エコ対応洗剤を使用した環境にやさしいクリーニングです。\n・土日祝日も作業承ります（割増料金あり）。';
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+
+const ckItems={
+  ac:{'施工前確認':['エアコン動作確認','フィルター状態確認','室内養生実施'],'施工内容':['フィルター取外し・洗浄','熱交換器高圧洗浄','ファン・ドレンパン洗浄','組付け・動作確認'],'施工後確認':['試運転・冷暖房確認','水漏れ・異音チェック','養生撤去・清掃']},
+  kitchen:{'施工前確認':['コンロ・シンク・換気扇の状態確認'],'施工内容':['コンロ・五徳洗浄','シンク・排水口洗浄','レンジフード内部洗浄','壁面清掃'],'施工後確認':['排水・ガス確認','仕上がり確認']},
+  bath:{'施工前確認':['浴槽・壁面・カビ状態確認'],'施工内容':['浴槽・壁面洗浄','蛇口・シャワー洗浄','床・排水口洗浄','鏡水アカ除去'],'施工後確認':['排水確認','仕上がり確認']},
+  toilet:{'施工前確認':['便器・タンク状態確認'],'施工内容':['便器内外洗浄','床・壁面清掃','換気扇清掃'],'施工後確認':['水流確認','仕上がり確認']},
+  set:{'施工前確認':['全施工箇所状態確認'],'施工内容':['キッチン・換気扇洗浄','浴室クリーニング','トイレクリーニング','全体仕上げ'],'施工後確認':['全箇所動作・仕上がり確認']},
+  moving:{'施工前確認':['全室確認・施工箇所の把握'],'施工内容':['キッチン全体クリーニング','水回り全体','各居室・廊下清掃','窓ガラス・サッシ清掃'],'施工後確認':['全箇所仕上がり確認','お客様立会い確認']},
+};
+const ckMenuLabel={ac:'エアコン洗浄クリーニング',kitchen:'キッチン・換気扇',bath:'浴室・お風呂',toilet:'トイレ',set:'セットメニュー',moving:'お引越しクリーニング'};
+const nextMap={ac:'1年後（夏前がおすすめ）',kitchen:'半年〜1年後',bath:'半年〜1年後',toilet:'3ヶ月〜半年後',set:'半年〜1年後',moving:'新居でもぜひご利用ください'};
+
+function generateChecklist(){
+  const client=document.getElementById('ckClient').value||'　';
+  const date=document.getElementById('ckDate').value;
+  const staff=document.getElementById('ckStaff').value||'担当者';
+  const menu=document.getElementById('ckMenu').value;
+  const result=document.getElementById('ckResult').value;
+  const note=document.getElementById('ckNote').value;
+  if(!client.trim()){alert('お客様名を入力してください');return;}
+  const dateStr=new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('ckDocDate').textContent='施工日：'+dateStr+'　発行：'+todayStr;
+  document.getElementById('ckDocClient').textContent=client+' 様';
+  document.getElementById('ckDocMenu').textContent=ckMenuLabel[menu]||menu;
+  document.getElementById('ckDocStaff').textContent=staff;
+  document.getElementById('ckDocNext').textContent=nextMap[menu]||'1年後';
+  document.getElementById('ckDocResult').textContent='✅ 施工完了：'+result;
+  const sections=ckItems[menu]||ckItems.ac;
+  document.getElementById('ckCheckSections').innerHTML=Object.entries(sections).map(([title,items])=>`
+    <div class="check-section">
+      <div class="check-title">${title}</div>
+      <div class="check-items">${items.map(i=>`<div class="check-item"><span class="ck">✓</span>${i}</div>`).join('')}</div>
+    </div>`).join('');
+  document.getElementById('ckDocNote').textContent=(note?'特記事項：'+note+'\n':'')+'・施工後のご不明点はメール・お電話にてお気軽にご連絡ください。\n・次回のご利用もClean&Re:Homeをよろしくお願いいたします。\n・土日祝日も対応しております。';
+  document.getElementById('ckEmpty').style.display='none';
+  document.getElementById('ckDoc').style.display='block';
+  document.getElementById('ckPdfBtn').style.display='flex';
+  document.getElementById('ckPrintBtn').style.display='flex';
+}
+</script>
+</body>
+</html>

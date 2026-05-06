@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>草むしり屋 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --green-dark:#2d5a1b;
+  --green:#3d7a27;
+  --green-mid:#4e9632;
+  --green-light:#eaf4e3;
+  --brown:#7a5c2d;
+  --tan:#f5f0e8;
+  --yellow:#f5c800;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --blue:#1565c0;
+  --blue-light:#e3f0fc;
+  --gray-bg:#f5f7f3;
+  --ink:#1c2a14;
+  --gray:#5a6a50;
+  --line:#d4e0c8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#1c2a14;color:#a3d977;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:220px;background:var(--green-dark);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.1)}
+.logo-icon{font-size:26px;margin-bottom:6px}
+.logo-name{font-size:13px;font-weight:700;color:#fff;line-height:1.4}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.07)}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;border-right:3px solid #a3d977}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.3);line-height:1.7}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--green-dark)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+.page{display:none}
+.page.active{display:block}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--green)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+
+/* Card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#fafcf8}
+.card-title{font-size:13px;font-weight:700;color:var(--green-dark)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.f-sel{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;background:#fff}
+.f-inp{border:1px solid var(--line);border-radius:5px;padding:5px 9px;font-size:11px;font-family:inherit;width:130px}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--gray-bg);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:#f8fcf5}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-red{background:#fef2f2;color:var(--red)}
+.b-orange{background:#fff7ed;color:var(--orange)}
+.b-green{background:var(--green-light);color:var(--green)}
+.b-blue{background:var(--blue-light);color:var(--blue)}
+.b-brown{background:#fdf6e8;color:var(--brown)}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.a-green{background:var(--green);color:#fff}
+.a-yellow{background:var(--yellow);color:var(--green-dark)}
+.a-blue{background:var(--blue-light);color:var(--blue)}
+.a-brown{background:#fdf6e8;color:var(--brown);border:1px solid #e8d8b0}
+
+/* Two col layout */
+.two-col{display:grid;grid-template-columns:370px 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--green-dark);margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px;letter-spacing:.03em}
+.fi,.fs,.fta{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus,.fta:focus{outline:none;border-color:var(--green)}
+.fta{resize:vertical;min-height:60px}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--green);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--green-mid)}
+
+/* Preview */
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#fafcf8}
+.prev-title{font-size:12px;font-weight:700;color:var(--green-dark)}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px;line-height:2}
+
+/* Document */
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--green-dark)}
+.doc-company{font-size:14px;font-weight:700;color:var(--green-dark)}
+.doc-type{font-size:17px;font-weight:700;color:var(--green-dark);text-align:right}
+.doc-to{background:var(--green-light);padding:8px 12px;border-radius:4px;margin-bottom:12px}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:11px;background:var(--tan);padding:8px 10px;border-radius:4px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--green-dark);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--green-dark);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--yellow)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--tan);padding:8px 10px;border-radius:4px;line-height:1.8}
+
+/* Report specific sections */
+.rep-section{margin-bottom:12px}
+.rep-section-title{font-size:11px;font-weight:700;color:var(--green-dark);margin-bottom:6px;padding-bottom:4px;border-bottom:1px solid var(--line)}
+.rep-checklist{display:flex;flex-direction:column;gap:4px}
+.rep-check-item{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink)}
+.check-icon{color:var(--green);font-weight:700;width:16px}
+.photo-placeholder{background:var(--tan);border:1px dashed var(--line);border-radius:4px;height:60px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--gray);margin-top:4px}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — 草むしり屋様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🌿</div>
+      <div class="logo-name">草むしり屋<br>川口孫の手サービス</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span>ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('customers',this)"><span class="nav-icon">👥</span>顧客・スケジュール管理</div>
+      <div class="nav-item" onclick="showPage('report',this)"><span class="nav-icon">📄</span>現場報告書作成</div>
+      <div class="nav-item" onclick="showPage('estimate',this)"><span class="nav-icon">💴</span>見積書作成</div>
+    </nav>
+    <div class="sidebar-footer">
+      草むしり屋（草むしり屋.com）<br>川口孫の手サービス<br>048-497-3248
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi urgent"><div class="kn">3</div><div class="kl">🔴 今月の空き家管理報告待ち</div></div>
+          <div class="kpi warn"><div class="kn">5</div><div class="kl">🟠 今月の定期訪問予定</div></div>
+          <div class="kpi"><div class="kn">22</div><div class="kl">🌿 管理中の顧客数</div></div>
+          <div class="kpi"><div class="kn">8</div><div class="kl">📄 今月作成した報告書</div></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔴 報告書を送る必要がある空き家管理案件</span></div>
+          <table class="tbl">
+            <thead><tr><th>依頼人</th><th>物件所在地</th><th>作業内容</th><th>前回訪問</th><th>報告書</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">田中様（東京在住）</div><div style="font-size:10px;color:var(--gray)">mail: tanaka@xxx.com</div></td>
+                <td>川口市XX1丁目</td><td>草むしり・草刈り</td><td>2026-04-28</td>
+                <td><span class="badge b-red">🔴 未送付</span></td>
+                <td><div class="act-cell"><button class="act a-green" onclick="loadReport('田中様（東京在住）')">📄 報告書作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">鈴木様（海外在住）</div><div style="font-size:10px;color:var(--gray)">mail: suzuki@yyy.com</div></td>
+                <td>さいたま市XX2丁目</td><td>草むしり・庭木剪定</td><td>2026-04-22</td>
+                <td><span class="badge b-red">🔴 未送付</span></td>
+                <td><div class="act-cell"><button class="act a-green" onclick="loadReport('鈴木様（海外在住）')">📄 報告書作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">佐藤様（千葉在住）</div><div style="font-size:10px;color:var(--gray)">mail: sato@zzz.com</div></td>
+                <td>川口市XX3丁目</td><td>防草シート張り</td><td>2026-05-02</td>
+                <td><span class="badge b-orange">🟠 作成中</span></td>
+                <td><div class="act-cell"><button class="act a-green" onclick="loadReport('佐藤様（千葉在住）')">📄 報告書作成</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">📅 今月の定期訪問スケジュール</span></div>
+          <table class="tbl">
+            <thead><tr><th>訪問予定日</th><th>顧客名</th><th>種別</th><th>作業内容</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td>2026/05/10</td><td style="font-weight:700">川口市立〇〇図書館</td><td><span class="badge b-blue">公共施設</span></td><td>草むしり・草刈り</td><td><span class="badge b-orange">🟠 予定</span></td><td><div class="act-cell"><button class="act a-green" onclick="loadReport('川口市立〇〇図書館')">📄 報告書</button><button class="act a-yellow" onclick="loadEstimate('川口市立〇〇図書館')">💴 見積</button></div></td></tr>
+              <tr><td>2026/05/15</td><td style="font-weight:700">△△マンション管理組合</td><td><span class="badge b-brown">マンション</span></td><td>共用部草刈り・除草</td><td><span class="badge b-orange">🟠 予定</span></td><td><div class="act-cell"><button class="act a-green" onclick="loadReport('△△マンション管理組合')">📄 報告書</button></div></td></tr>
+              <tr><td>2026/05/20</td><td style="font-weight:700">田中様（東京在住）</td><td><span class="badge b-green">空き家管理</span></td><td>草むしり・郵便物確認</td><td><span class="badge b-green">🟢 確認済み</span></td><td><div class="act-cell"><button class="act a-green" onclick="loadReport('田中様（東京在住）')">📄 報告書</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客・スケジュール管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="akiya">🏚️ 空き家管理</option>
+                <option value="public">🏛️ 公共施設</option>
+                <option value="mansion">🏢 マンション</option>
+                <option value="kojin">👤 個人（定期）</option>
+              </select>
+              <input class="f-inp" placeholder="名前で検索..."/>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>顧客名</th><th>種別</th><th>主な作業</th><th>訪問頻度</th><th>次回予定</th><th>状態</th><th>操作</th></tr></thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">📄 現場報告書 作成</div>
+            <div class="fg"><label>依頼人名</label><input class="fi" id="repClient" placeholder="例：田中様（東京在住）"/></div>
+            <div class="fg"><label>物件所在地</label><input class="fi" id="repAddr" placeholder="例：川口市XX1丁目"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>作業日</label><input class="fi" type="date" id="repDate"/></div>
+              <div class="fg"><label>作業時間</label>
+                <select class="fs" id="repHours">
+                  <option>1時間</option><option>2時間</option><option>3時間</option>
+                  <option>4時間</option><option>半日（5時間）</option><option>1日（8時間）</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>作業内容（複数選択可）</label>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w1" checked> 草むしり・草取り</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w2"> 草刈り（機械）</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w3"> 庭木剪定</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w4"> 伐採・抜根</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w5"> 防草シート張り</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w6"> 砂利敷き</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w7"> 郵便物・ポスト確認</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="w8"> ゴミ・不用品処分</label>
+              </div>
+            </div>
+            <div class="fg"><label>作業エリアの広さ（坪/㎡）</label><input class="fi" id="repArea" placeholder="例：20坪"/></div>
+            <div class="fg"><label>作業前の状態</label>
+              <select class="fs" id="repBefore">
+                <option>雑草が膝丈以上に繁茂していた</option>
+                <option>雑草が腰丈に達していた</option>
+                <option>全体的に伸び過ぎていた</option>
+                <option>前回からやや伸びた程度</option>
+                <option>良好な状態を維持していた</option>
+              </select>
+            </div>
+            <div class="fg"><label>作業後の状態・所見</label>
+              <textarea class="fta" id="repAfter" placeholder="例：すべての雑草を根から除去。庭木の剪定も完了。郵便物なし。外観良好。"></textarea>
+            </div>
+            <div class="fg"><label>次回推奨訪問時期</label>
+              <select class="fs" id="repNext">
+                <option>約1ヶ月後（草が生えやすい季節）</option>
+                <option>約2ヶ月後</option>
+                <option>約3ヶ月後</option>
+                <option>半年後</option>
+                <option>次の草が生える季節（春/夏前）</option>
+              </select>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">現場報告書を作成する</button>
+          </div>
+
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">報告書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="repPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）\n実際のシステムでは依頼人にPDFメール送付まで自動化できます')">📄 PDF・メール送付</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="repEmpty">← 左で作業内容を入力して<br>「現場報告書を作成する」を押してください<br><br>📌 空き家管理の依頼人（遠方・海外在住）に<br>毎回送る報告書が自動で作れます</div>
+              <div class="doc" id="repDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">草むしり屋（草むしり屋.com）<br>川口孫の手サービス</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">埼玉県川口市 石神<br>TEL: 048-497-3248　info@kusamushiriya.com</div>
+                  </div>
+                  <div><div class="doc-type">現場作業報告書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="repDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">依頼人</div><div class="tn" id="repDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>物件所在地：<strong id="repDocAddr"></strong></div>
+                  <div>作業時間：<strong id="repDocHours"></strong></div>
+                  <div>作業エリア：<strong id="repDocArea"></strong></div>
+                  <div>次回推奨：<strong id="repDocNext"></strong></div>
+                </div>
+
+                <div class="rep-section">
+                  <div class="rep-section-title">実施作業内容</div>
+                  <div class="rep-checklist" id="repWorkList"></div>
+                </div>
+
+                <div class="rep-section">
+                  <div class="rep-section-title">作業前・作業後の状態</div>
+                  <table class="doc-table">
+                    <thead><tr><th>作業前</th><th>作業後</th></tr></thead>
+                    <tbody>
+                      <tr>
+                        <td id="repDocBefore"></td>
+                        <td id="repDocAfter"></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+
+                <div class="rep-section">
+                  <div class="rep-section-title">写真記録（実際のシステムでは現場写真を添付）</div>
+                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                    <div class="photo-placeholder">📷 作業前写真</div>
+                    <div class="photo-placeholder">📷 作業後写真</div>
+                  </div>
+                </div>
+
+                <div class="doc-note" id="repDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="estClient" placeholder="例：田中様"/></div>
+            <div class="fg"><label>作業内容</label>
+              <select class="fs" id="estWork">
+                <option value="">-- 選択 --</option>
+                <option value="kusa_te">草むしり（手作業）</option>
+                <option value="kusa_ki">草刈り（機械）</option>
+                <option value="kusa_both">草むしり＋草刈り（両方）</option>
+                <option value="sentei">庭木剪定</option>
+                <option value="bassai">伐採・抜根</option>
+                <option value="bousou">防草シート＋砂利敷き</option>
+                <option value="shibari">芝張り工事</option>
+                <option value="akiya">空き家定期管理（月1回）</option>
+                <option value="reform">お庭のリフォーム（一式）</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>面積（坪）</label><input class="fi" type="number" id="estTsubo" placeholder="例：30"/></div>
+              <div class="fg"><label>草の状態</label>
+                <select class="fs" id="estCondition">
+                  <option value="normal">普通（定期管理中）</option>
+                  <option value="heavy">繁茂（かなり伸びている）</option>
+                  <option value="very_heavy">荒地（数年放置）</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>作業回数・契約</label>
+              <select class="fs" id="estFreq">
+                <option value="spot">スポット（1回）</option>
+                <option value="regular">定期契約（継続割引あり）</option>
+              </select>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：急ぎ、立会い不要 等"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）\n実際のシステムでは見積書をPDFで送付できます')">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← 左で作業内容を選んで<br>「見積書を作成する」を押してください</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">草むしり屋（草むしり屋.com）<br>川口孫の手サービス</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">埼玉県川口市 石神<br>TEL: 048-497-3248　info@kusamushiriya.com</div>
+                  </div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>作業内容：<strong id="estDocWork"></strong></div>
+                  <div>面積：<strong id="estDocArea"></strong></div>
+                  <div>草の状態：<strong id="estDocCond"></strong></div>
+                  <div>契約種別：<strong id="estDocFreq"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>項目</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total">
+                  <span class="tl">合計金額（税込）</span>
+                  <span class="tv" id="estTotal"></span>
+                </div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const today=new Date();
+document.getElementById('todayLabel').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('repDate').value=today.toISOString().split('T')[0];
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const t={dashboard:'ダッシュボード',customers:'顧客・スケジュール管理',report:'現場報告書作成',estimate:'見積書作成'};
+  document.getElementById('pageTitle').textContent=t[id];
+}
+
+const customers=[
+  {name:'田中様（東京在住）',type:'akiya',typeName:'空き家管理',work:'草むしり・郵便物確認',freq:'月1回',next:'2026-05-20',status:'urgent'},
+  {name:'鈴木様（海外在住）',type:'akiya',typeName:'空き家管理',work:'草むしり・庭木剪定',freq:'2ヶ月1回',next:'2026-06-01',status:'ok'},
+  {name:'佐藤様（千葉在住）',type:'akiya',typeName:'空き家管理',work:'草むしり',freq:'3ヶ月1回',next:'2026-07-01',status:'ok'},
+  {name:'川口市立〇〇図書館',type:'public',typeName:'公共施設',work:'草むしり・草刈り',freq:'月1回',next:'2026-05-10',status:'urgent'},
+  {name:'△△マンション管理組合',type:'mansion',typeName:'マンション',work:'共用部草刈り',freq:'月1回',next:'2026-05-15',status:'urgent'},
+  {name:'伊藤様（定期個人）',type:'kojin',typeName:'個人定期',work:'草むしり・剪定',freq:'2ヶ月1回',next:'2026-06-15',status:'ok'},
+  {name:'□□市保存緑地',type:'public',typeName:'公共施設',work:'草刈り・除草',freq:'年2回',next:'2026-07-01',status:'ok'},
+];
+const sLabel={urgent:'🟠 今月予定',ok:'🟢 余裕あり'};
+const sClass={urgent:'b-orange',ok:'b-green'};
+const typeClass={akiya:'b-green',public:'b-blue',mansion:'b-brown',kojin:'b-green'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td style="font-weight:700">${c.name}</td>
+      <td><span class="badge ${typeClass[c.type]}">${c.typeName}</span></td>
+      <td style="font-size:11px">${c.work}</td>
+      <td><span class="badge b-blue">${c.freq}</span></td>
+      <td style="font-size:11px">${c.next}</td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-green" onclick="loadReport('${c.name}')">📄 報告書</button>
+        <button class="act a-yellow" onclick="loadEstimate('${c.name}')">💴 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+function filterCust(v){renderCust(v==='all'?customers:customers.filter(c=>c.type===v));}
+
+function loadReport(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='現場報告書作成';
+  document.getElementById('repClient').value=name;
+}
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+
+// 報告書生成
+function generateReport(){
+  const client=document.getElementById('repClient').value||'　';
+  const addr=document.getElementById('repAddr').value||'　';
+  const date=document.getElementById('repDate').value;
+  const hours=document.getElementById('repHours').value;
+  const area=document.getElementById('repArea').value||'　';
+  const before=document.getElementById('repBefore').value;
+  const after=document.getElementById('repAfter').value||'作業完了。現状良好。';
+  const next=document.getElementById('repNext').value;
+  if(!client.trim()){alert('依頼人名を入力してください');return;}
+
+  const works=[
+    {id:'w1',label:'草むしり・草取り（手作業）'},
+    {id:'w2',label:'草刈り（機械使用）'},
+    {id:'w3',label:'庭木剪定'},
+    {id:'w4',label:'伐採・抜根'},
+    {id:'w5',label:'防草シート張り'},
+    {id:'w6',label:'砂利敷き'},
+    {id:'w7',label:'郵便物・ポスト確認'},
+    {id:'w8',label:'ゴミ・不用品処分'},
+  ];
+  const selected=works.filter(w=>document.getElementById(w.id).checked);
+
+  const dateStr=new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('repDocDate').textContent='作業日：'+dateStr+'　発行：'+todayStr;
+  document.getElementById('repDocClient').textContent=client+' 様';
+  document.getElementById('repDocAddr').textContent=addr;
+  document.getElementById('repDocHours').textContent=hours;
+  document.getElementById('repDocArea').textContent=area;
+  document.getElementById('repDocNext').textContent=next;
+  document.getElementById('repDocBefore').textContent=before;
+  document.getElementById('repDocAfter').textContent=after;
+  document.getElementById('repWorkList').innerHTML=selected.map(w=>`
+    <div class="rep-check-item"><span class="check-icon">✓</span>${w.label}</div>`).join('');
+  document.getElementById('repDocNote').textContent='・本報告書は作業完了の証明としてご保管ください。\n・写真は別途メールにてお送りします。\n・次回のご訪問時期が近づきましたらご連絡いたします。\n　草むしり屋（草むしり屋.com）　担当：高橋 功';
+
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+}
+
+// 見積書生成
+const workData={
+  kusa_te:{name:'草むしり（手作業）',base:3300,perTsubo:0,unit:'時間制'},
+  kusa_ki:{name:'草刈り（機械）',base:5000,perTsubo:300,unit:'坪'},
+  kusa_both:{name:'草むしり＋草刈り（両方）',base:6000,perTsubo:400,unit:'坪'},
+  sentei:{name:'庭木剪定',base:8000,perTsubo:0,unit:'一式'},
+  bassai:{name:'伐採・抜根',base:15000,perTsubo:0,unit:'一式'},
+  bousou:{name:'防草シート＋砂利敷き',base:10000,perTsubo:1600,unit:'㎡'},
+  shibari:{name:'芝張り工事',base:5000,perTsubo:2000,unit:'㎡'},
+  akiya:{name:'空き家定期管理（月1回）',base:15000,perTsubo:0,unit:'月額'},
+  reform:{name:'お庭のリフォーム（一式）',base:50000,perTsubo:2000,unit:'㎡'},
+};
+const condMult={normal:1,heavy:1.3,very_heavy:1.6};
+const condLabel={normal:'普通（定期管理中）',heavy:'繁茂（かなり伸びている）',very_heavy:'荒地（数年放置）'};
+const freqLabel={spot:'スポット（1回）',regular:'定期契約（継続割引）'};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const workVal=document.getElementById('estWork').value;
+  const tsubo=parseInt(document.getElementById('estTsubo').value)||20;
+  const cond=document.getElementById('estCondition').value;
+  const freq=document.getElementById('estFreq').value;
+  const note=document.getElementById('estNote').value;
+  if(!workVal){alert('作業内容を選択してください');return;}
+
+  const w=workData[workVal];
+  const mult=condMult[cond]||1;
+  const freqDisc=freq==='regular'?0.9:1;
+  let base=Math.floor(w.base*mult*freqDisc);
+  let areaFee=w.perTsubo>0?Math.floor(w.perTsubo*tsubo*mult*freqDisc):0;
+  const sub=base+areaFee;
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+30);
+
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 様';
+  document.getElementById('estDocWork').textContent=w.name;
+  document.getElementById('estDocArea').textContent=tsubo+'坪';
+  document.getElementById('estDocCond').textContent=condLabel[cond];
+  document.getElementById('estDocFreq').textContent=freqLabel[freq];
+
+  let rows=`<tr><td>${w.name}　基本料金</td><td style="text-align:right">¥${base.toLocaleString()}</td></tr>`;
+  if(areaFee>0) rows+=`<tr><td>面積加算（${tsubo}坪 × ¥${w.perTsubo}）</td><td style="text-align:right">¥${areaFee.toLocaleString()}</td></tr>`;
+  if(cond!=='normal') rows+=`<tr style="background:var(--tan)"><td>草の状態による割増（${Math.round((mult-1)*100)}%増）</td><td style="text-align:right">適用済み</td></tr>`;
+  if(freq==='regular') rows+=`<tr style="background:var(--green-light)"><td>定期契約割引（10%OFF）</td><td style="text-align:right;color:var(--green)">適用済み</td></tr>`;
+  rows+=`<tr style="background:var(--tan)"><td style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--tan)"><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estRows').innerHTML=rows;
+  document.getElementById('estTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・草の状態・作業条件により実際の金額は変わる場合があります。\n・立会い不要でお受けできます（空き家・不在のお客様もご安心ください）。\n・定期契約の場合、継続割引が適用されます。';
+
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+</script>
+</body>
+</html>
