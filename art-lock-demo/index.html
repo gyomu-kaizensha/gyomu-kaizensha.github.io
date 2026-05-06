@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>アートロックサービス 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --dark:#1e2035;
+  --dark-mid:#2a2d4a;
+  --cyan:#00ccdd;
+  --cyan-light:#e0fafc;
+  --yellow:#f5c800;
+  --yellow-light:#fffbe6;
+  --red:#dc2626;
+  --orange:#ea580c;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --gray-bg:#f5f6fa;
+  --ink:#1a1a2e;
+  --gray:#5a6070;
+  --line:#d0d8e8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#0a0c1a;color:var(--cyan);text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--dark);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(0,204,221,.2)}
+.logo-icon{font-size:24px;margin-bottom:6px}
+.logo-name{font-size:13px;font-weight:700;color:#fff;line-height:1.4}
+.logo-cyan{color:var(--cyan)}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.4);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s}
+.nav-item:hover{background:rgba(0,204,221,.1);color:#fff}
+.nav-item.active{background:rgba(0,204,221,.15);color:#fff;border-right:3px solid var(--cyan)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.1);font-size:10px;color:rgba(255,255,255,.3);line-height:1.7}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--dark)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line);border-top:3px solid var(--dark)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--dark)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi.cyan .kn{color:#00aacc}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--dark);background:var(--dark)}
+.card-title{font-size:13px;font-weight:700;color:#fff}
+.card-cyan{color:var(--cyan)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.f-sel{border:1px solid rgba(255,255,255,.2);border-radius:4px;padding:5px 9px;font-size:11px;font-family:inherit;background:rgba(255,255,255,.1);color:#fff}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--gray-bg);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--dark);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:var(--cyan-light)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-red{background:#fef2f2;color:var(--red)}
+.b-orange{background:#fff7ed;color:var(--orange)}
+.b-green{background:var(--green-light);color:var(--green)}
+.b-cyan{background:var(--cyan-light);color:#00aacc}
+.b-yellow{background:var(--yellow-light);color:#a07000}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.a-dark{background:var(--dark);color:#fff}
+.a-cyan{background:var(--cyan);color:var(--dark)}
+.a-yellow{background:var(--yellow);color:var(--dark)}
+.a-line{background:#06c755;color:#fff}
+.a-ghost{background:var(--cyan-light);color:#00aacc;border:1px solid var(--line)}
+.two-col{display:grid;grid-template-columns:370px 1fr;gap:18px}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--dark);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--dark)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px}
+.fi,.fs{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--cyan)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--dark);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--dark-mid)}
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:2px solid var(--dark);display:flex;align-items:center;justify-content:space-between;background:var(--dark)}
+.prev-title{font-size:12px;font-weight:700;color:var(--cyan)}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px;line-height:2}
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--dark)}
+.doc-company{font-size:14px;font-weight:700;color:var(--dark)}
+.doc-type{font-size:17px;font-weight:700;color:var(--dark);text-align:right}
+.doc-to{background:var(--cyan-light);padding:8px 12px;border-radius:4px;margin-bottom:12px;border-left:4px solid var(--cyan)}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:11px;background:var(--gray-bg);padding:8px 10px;border-radius:4px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--dark);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--dark);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--cyan)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--gray-bg);padding:8px 10px;border-radius:4px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="demo-bar">⚠️ デモ画面 — アートロックサービス様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🔑</div>
+      <div class="logo-name"><span class="logo-cyan">アートロック</span><br>サービス</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span>ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('customers',this)"><span class="nav-icon">👥</span>顧客・フォロー管理</div>
+      <div class="nav-item" onclick="showPage('estimate',this)"><span class="nav-icon">💴</span>見積書作成</div>
+      <div class="nav-item" onclick="showPage('report',this)"><span class="nav-icon">📄</span>作業完了報告書</div>
+    </nav>
+    <div class="sidebar-footer">アートロックサービス<br>さいたま市見沼区<br>0120-69-0402</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi urgent"><div class="kn">4</div><div class="kl">🔴 鍵紛失後・完全交換未対応</div></div>
+          <div class="kpi warn"><div class="kn">6</div><div class="kl">🟡 電子錠の電池交換時期</div></div>
+          <div class="kpi cyan"><div class="kn">2</div><div class="kl">🔔 今日の緊急対応依頼</div></div>
+          <div class="kpi"><div class="kn">28</div><div class="kl">🔑 管理中の顧客数</div></div>
+        </div>
+
+        <div style="background:linear-gradient(135deg,var(--dark) 0%,var(--dark-mid) 100%);border-radius:8px;padding:14px 20px;margin-bottom:18px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:13px;font-weight:700;color:var(--cyan);margin-bottom:4px">🚨 鍵の紛失後は「完全シリンダー交換」のタイミング</div>
+            <div style="font-size:11px;opacity:.8">鍵を拾った第三者が合鍵を作れる状態が続いています。紛失から未交換のお客様へ案内を。</div>
+          </div>
+          <div style="background:var(--yellow);color:var(--dark);padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700">要フォロー 4件</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🚨 <span class="card-cyan">鍵紛失後・シリンダー未交換</span>のお客様（防犯リスクあり）</span></div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>場所</th><th>対応内容</th><th>対応日</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div style="font-weight:700">田中 美代子 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX1丁目</div></td><td>自宅玄関</td><td>鍵開け（鍵紛失）</td><td>2026-04-20</td><td><span class="badge b-red">🔴 16日未交換</span></td><td><div class="act-cell"><button class="act a-dark">📞 電話</button><button class="act a-cyan" onclick="loadEstimate('田中 美代子')">💴 見積</button></div></td></tr>
+            <tr><td><div style="font-weight:700">鈴木 幸雄 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX2丁目</div></td><td>自宅玄関</td><td>鍵開け（鍵紛失）</td><td>2026-04-28</td><td><span class="badge b-orange">🟠 8日未交換</span></td><td><div class="act-cell"><button class="act a-dark">📞 電話</button><button class="act a-cyan" onclick="loadEstimate('鈴木 幸雄')">💴 見積</button></div></td></tr>
+            <tr><td><div style="font-weight:700">佐藤 直子 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX3丁目</div></td><td>マンション玄関</td><td>鍵開け（鍵紛失）</td><td>2026-05-01</td><td><span class="badge b-orange">🟠 5日未交換</span></td><td><div class="act-cell"><button class="act a-dark">📞 電話</button><button class="act a-cyan" onclick="loadEstimate('佐藤 直子')">💴 見積</button></div></td></tr>
+          </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔋 <span class="card-cyan">電子錠・スマートロック</span>の電池交換・更新時期</span></div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>機種</th><th>設置日</th><th>電池交換目安</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td style="font-weight:700">高橋 淳一 様</td><td>電子錠（テンキー型）</td><td>2024-11-15</td><td>2026-05-15（今月）</td><td><span class="badge b-yellow">🔋 電池残量注意</span></td><td><div class="act-cell"><button class="act a-dark">📞</button><button class="act a-yellow">電池交換案内</button></div></td></tr>
+            <tr><td style="font-weight:700">中村 和枝 様</td><td>スマートロック（Bluetooth）</td><td>2025-01-10</td><td>2026-07-10</td><td><span class="badge b-green">🟢 問題なし</span></td><td><div class="act-cell"><button class="act a-dark">📞</button></div></td></tr>
+          </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客・フォロー管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🚨 鍵紛失後・未交換</option>
+                <option value="battery">🔋 電池交換時期</option>
+                <option value="ok">🟢 問題なし</option>
+              </select>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>エリア</th><th>対応内容</th><th>対応日</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="estClient" placeholder="例：田中 美代子"/></div>
+            <div class="fg"><label>作業・工事の種類</label>
+              <select class="fs" id="estWork">
+                <option value="">-- 選択 --</option>
+                <option value="open_house">鍵開け（住宅・玄関）</option>
+                <option value="open_car">鍵開け（自動車）</option>
+                <option value="open_bike">鍵開け（バイク・自転車）</option>
+                <option value="open_safe">鍵開け（金庫）</option>
+                <option value="open_locker">鍵開け（ロッカー・机）</option>
+                <option value="replace_cylinder">シリンダー（錠前）交換</option>
+                <option value="replace_smart">電子錠・スマートロック取付</option>
+                <option value="key_copy">合鍵作成</option>
+                <option value="battery">電子錠電池交換</option>
+                <option value="consult">防犯相談・診断</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>錠前・建物の種別</label>
+                <select class="fs" id="estType">
+                  <option value="house">一般住宅・戸建て</option>
+                  <option value="mansion">マンション・アパート</option>
+                  <option value="car">自動車</option>
+                  <option value="other">その他</option>
+                </select>
+              </div>
+              <div class="fg"><label>緊急度</label>
+                <select class="fs" id="estUrgency">
+                  <option value="normal">通常</option>
+                  <option value="urgent">急ぎ（当日）</option>
+                  <option value="emergency">緊急（即時）</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：ディンプルキー・2ロック等"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head"><span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← 作業の種類を選んで<br>「見積書を作成する」を押してください<br><br>🔑 鍵の種別・緊急度から<br>概算金額が自動で計算されます</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div><div class="doc-company">アートロックサービス</div><div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市見沼区（埼玉県全域）<br>TEL: 0120-69-0402　artlock1169@outlook.jp</div></div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>作業内容：<strong id="estDocWork"></strong></div>
+                  <div>種別：<strong id="estDocType"></strong></div>
+                  <div>緊急度：<strong id="estDocUrgency"></strong></div>
+                  <div>有効期限：<strong id="estDocExp"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>項目</th><th style="text-align:right">概算金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total"><span class="tl">合計金額（税込）</span><span class="tv" id="estTotal"></span></div>
+                <div style="background:var(--cyan-light);border-left:3px solid var(--cyan);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px">🔑 年中無休・安心料金・出張費無料でお見積り</div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">📄 作業完了報告書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="repClient" placeholder="例：田中 美代子"/></div>
+            <div class="fg"><label>施工場所</label><input class="fi" id="repAddr" placeholder="例：さいたま市XX1丁目"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>対応日</label><input class="fi" type="date" id="repDate"/></div>
+              <div class="fg"><label>担当者</label><input class="fi" id="repStaff" placeholder="例：田中"/></div>
+            </div>
+            <div class="fg"><label>作業内容</label>
+              <select class="fs" id="repWork">
+                <option>鍵開け（玄関・鍵紛失）</option>
+                <option>鍵開け（玄関・鍵閉じ込め）</option>
+                <option>シリンダー（錠前）交換工事</option>
+                <option>電子錠・スマートロック取付工事</option>
+                <option>合鍵作成</option>
+                <option>電子錠電池交換</option>
+              </select>
+            </div>
+            <div class="fg"><label>フォロー提案</label>
+              <select class="fs" id="repFollow">
+                <option value="cylinder">シリンダー交換をご提案した（鍵紛失の場合）</option>
+                <option value="smart">電子錠へのアップグレードをご提案した</option>
+                <option value="battery">電池交換の定期案内をご提案した</option>
+                <option value="none">フォロー不要</option>
+              </select>
+            </div>
+            <div class="fg"><label>作業結果</label>
+              <select class="fs" id="repResult">
+                <option>問題なし・良好に完了</option>
+                <option>完了・追加工事を推奨</option>
+              </select>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">作業完了報告書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head"><span class="prev-title">作業完了報告書 プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="repPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="repEmpty">← 作業内容を入力して<br>「作業完了報告書を作成する」を押してください</div>
+              <div class="doc" id="repDoc" style="display:none">
+                <div class="doc-header">
+                  <div><div class="doc-company">アートロックサービス</div><div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市（埼玉全域）　TEL: 0120-69-0402</div></div>
+                  <div><div class="doc-type" style="font-size:15px">作業完了報告書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="repDocDate2"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="repDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施工場所：<strong id="repDocAddr"></strong></div>
+                  <div>担当者：<strong id="repDocStaff"></strong></div>
+                  <div>作業内容：<strong id="repDocWork"></strong></div>
+                  <div>フォロー提案：<strong id="repDocFollow"></strong></div>
+                </div>
+                <div id="repChecks" style="margin-bottom:10px"></div>
+                <div style="background:var(--green-light);padding:8px 12px;border-radius:4px;font-size:12px;font-weight:700;color:var(--green);margin-bottom:8px" id="repDocResult"></div>
+                <div style="background:var(--cyan-light);border-left:3px solid var(--cyan);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px" id="repDocNote2"></div>
+                <div class="doc-note" id="repDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const today=new Date();
+document.getElementById('todayLabel').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('repDate').value=today.toISOString().split('T')[0];
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const t={dashboard:'ダッシュボード',customers:'顧客・フォロー管理',estimate:'見積書作成',report:'作業完了報告書'};
+  document.getElementById('pageTitle').textContent=t[id];
+}
+
+const customers=[
+  {name:'田中 美代子',area:'さいたま市',work:'鍵開け（鍵紛失）',date:'2026-04-20',status:'urgent',note:'シリンダー未交換'},
+  {name:'鈴木 幸雄',area:'さいたま市',work:'鍵開け（鍵紛失）',date:'2026-04-28',status:'urgent',note:'シリンダー未交換'},
+  {name:'佐藤 直子',area:'さいたま市',work:'鍵開け（鍵紛失）',date:'2026-05-01',status:'urgent',note:'マンション・未交換'},
+  {name:'高橋 淳一',area:'さいたま市',work:'電子錠設置',date:'2024-11-15',status:'battery',note:'電池交換時期'},
+  {name:'中村 和枝',area:'さいたま市',work:'スマートロック設置',date:'2025-01-10',status:'ok',note:''},
+  {name:'渡辺 正人',area:'さいたま市',work:'シリンダー交換',date:'2025-08-20',status:'ok',note:''},
+];
+const sLabel={urgent:'🚨 鍵紛失後・未交換',battery:'🔋 電池交換時期',ok:'🟢 問題なし'};
+const sClass={urgent:'b-red',battery:'b-yellow',ok:'b-green'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td style="font-weight:700">${c.name} 様</td>
+      <td style="font-size:11px">${c.area}</td>
+      <td style="font-size:11px">${c.work}</td>
+      <td style="font-size:11px">${c.date}</td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-dark">📞</button>
+        <button class="act a-cyan" onclick="loadEstimate('${c.name}')">💴 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+function filterCust(v){renderCust(v==='all'?customers:v==='urgent'?customers.filter(c=>c.status==='urgent'):v==='battery'?customers.filter(c=>c.status==='battery'):customers.filter(c=>c.status==='ok'));}
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+function loadReport(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='作業完了報告書';
+  document.getElementById('repClient').value=name;
+}
+
+const works={
+  open_house:{name:'鍵開け（住宅・玄関）',base:8000},
+  open_car:{name:'鍵開け（自動車）',base:12000},
+  open_bike:{name:'鍵開け（バイク・自転車）',base:5000},
+  open_safe:{name:'鍵開け（金庫）',base:20000},
+  open_locker:{name:'鍵開け（ロッカー・机）',base:6000},
+  replace_cylinder:{name:'シリンダー（錠前）交換',base:15000},
+  replace_smart:{name:'電子錠・スマートロック取付',base:35000},
+  key_copy:{name:'合鍵作成',base:2000},
+  battery:{name:'電子錠電池交換',base:3000},
+  consult:{name:'防犯相談・診断',base:0},
+};
+const typeLabel={house:'一般住宅・戸建て',mansion:'マンション・アパート',car:'自動車',other:'その他'};
+const urgLabel={normal:'通常',urgent:'急ぎ（当日）',emergency:'緊急（即時）'};
+const urgMult={normal:1,urgent:1.2,emergency:1.5};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const workKey=document.getElementById('estWork').value;
+  const type=document.getElementById('estType').value;
+  const urgency=document.getElementById('estUrgency').value;
+  const note=document.getElementById('estNote').value;
+  if(!workKey){alert('作業の種類を選んでください');return;}
+  const w=works[workKey];
+  const base=w.base===0?0:Math.floor(w.base*urgMult[urgency]);
+  const tax=Math.floor(base*.1);
+  const total=base+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+7);
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 様';
+  document.getElementById('estDocWork').textContent=w.name;
+  document.getElementById('estDocType').textContent=typeLabel[type];
+  document.getElementById('estDocUrgency').textContent=urgLabel[urgency];
+  document.getElementById('estDocExp').textContent=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estRows').innerHTML=w.base===0
+    ?`<tr><td>${w.name}</td><td style="text-align:right">無料サービス</td></tr>`
+    :`<tr><td>${w.name}</td><td style="text-align:right">¥${base.toLocaleString()}</td></tr>`
+    +(urgency!=='normal'?`<tr style="background:var(--yellow-light)"><td>緊急対応割増（${Math.round((urgMult[urgency]-1)*100)}%）</td><td style="text-align:right;color:#a07000">含む</td></tr>`:'')
+    +(w.base>0?`<tr style="background:var(--gray-bg)"><td style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${base.toLocaleString()}</td></tr><tr style="background:var(--gray-bg)"><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`:'');
+  document.getElementById('estTotal').textContent=w.base===0?'無料':'¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・上記は概算です。現地確認後に正式見積をご提示します。\n・年中無休・出張費無料・安心料金。\n・鍵紛失の場合はシリンダー交換をお勧めします。';
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+
+function generateReport(){
+  const client=document.getElementById('repClient').value||'　';
+  const addr=document.getElementById('repAddr').value||'　';
+  const date=document.getElementById('repDate').value;
+  const staff=document.getElementById('repStaff').value||'担当者';
+  const work=document.getElementById('repWork').value;
+  const follow=document.getElementById('repFollow').value;
+  const result=document.getElementById('repResult').value;
+  if(!client.trim()){alert('お客様名を入力してください');return;}
+  const dateStr=new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const followLabel={cylinder:'シリンダー交換をご提案',smart:'電子錠アップグレードをご提案',battery:'電池定期交換案内',none:'フォロー不要'};
+  const followNote={cylinder:'🚨 鍵を紛失した場合、合鍵を作られた可能性があります。防犯のためシリンダー交換をお勧めします。',smart:'🔒 電子錠にアップグレードすることで、鍵紛失のリスクをゼロにできます。',battery:'🔋 電子錠の電池は約6ヶ月〜1年で交換が必要です。交換時期になりましたらご連絡いたします。',none:''};
+  document.getElementById('repDocDate2').textContent='対応日：'+dateStr+'　発行：'+todayStr;
+  document.getElementById('repDocClient').textContent=client+' 様';
+  document.getElementById('repDocAddr').textContent=addr;
+  document.getElementById('repDocStaff').textContent=staff;
+  document.getElementById('repDocWork').textContent=work;
+  document.getElementById('repDocFollow').textContent=followLabel[follow];
+  document.getElementById('repDocResult').textContent='✅ 作業完了：'+result;
+  const checks=['現地確認・鍵・錠前の状態確認','作業（開錠・交換・設置）実施','動作確認・施錠テスト','お客様への引き渡し・鍵確認'];
+  document.getElementById('repChecks').innerHTML=`<div style="font-size:11px;font-weight:700;color:var(--dark);margin-bottom:6px;border-bottom:1px solid var(--line);padding-bottom:4px">作業・確認項目</div>`+checks.map(c=>`<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:3px"><span style="color:var(--green);font-weight:700">✓</span>${c}</div>`).join('');
+  document.getElementById('repDocNote2').textContent=followNote[follow]||'';
+  document.getElementById('repDocNote').textContent='・ご不明点はお気軽にご連絡ください（0120-69-0402）。\n・年中無休で対応しております。\n・LINEでもご相談受け付けています。';
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+}
+</script>
+</body>
+</html>
