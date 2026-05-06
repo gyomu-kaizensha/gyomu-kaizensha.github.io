@@ -172,9 +172,21 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
   .demo-bar{font-size:10px;padding:4px}
   .two-col{grid-template-columns:1fr}
 }
+@media(max-width:768px){
+  .sidebar{position:fixed;top:0;left:-100%;width:80%;max-width:280px;height:100%;z-index:1000;transition:left .3s ease;}
+  .sidebar.open{left:0}
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;}
+  .overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;font-size:20px;color:var(--ink);background:none;border:none;}
+  .topbar{position:sticky;top:0;z-index:100;}
+  .app{display:block;}
+  .main{width:100%;overflow-x:hidden;}
+}
+@media(min-width:769px){.hamburger{display:none}}
 </style>
 </head>
 <body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 <div class="demo-bar">⚠️ デモ画面 — 街の屋根やさん埼玉上尾店様向け 業務管理システム イメージ（業務改善舎 作成）</div>
 <div class="app">
   <aside class="sidebar">
@@ -196,6 +208,7 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
   </aside>
   <div class="main">
     <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
       <div class="topbar-title" id="pageTitle">ダッシュボード</div>
       <span class="date-badge" id="todayLabel"></span>
     </div>
@@ -594,6 +607,8 @@ function generateReport(){
   document.getElementById('repPdfBtn').style.display='flex';
   document.getElementById('repPrintBtn').style.display='flex';
 }
+function openSidebar(){document.querySelector('.sidebar').classList.add('open');document.getElementById('overlay').classList.add('open');}
+function closeSidebar(){document.querySelector('.sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
 </script>
 </body>
 </html>
