@@ -1,23 +1,69 @@
 <!DOCTYPE html>
 <html lang="ja">
-<head><meta charset="UTF-8"><title>業務改善舎 デモ一覧</title>
-<style>body{font-family:sans-serif;max-width:800px;margin:40px auto;padding:20px}h1{color:#1a3a5c}a{display:block;padding:12px;margin:8px 0;background:#e3f0fc;border-radius:6px;color:#1a3a5c;text-decoration:none}a:hover{background:#1a3a5c;color:#fff}</style>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>業務改善舎 デモページ一覧</title>
+<style>
+body{font-family:'Noto Sans JP',sans-serif;max-width:860px;margin:40px auto;padding:20px;background:#f8f9fa;color:#1a2535}
+h1{font-size:22px;color:#1a3a5c;margin-bottom:8px}
+p{font-size:13px;color:#666;margin-bottom:24px}
+.section{margin-bottom:20px}
+.section-title{font-size:12px;font-weight:700;color:#888;letter-spacing:.1em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid #ddd}
+a{display:block;padding:13px 18px;margin:6px 0;background:#fff;border-radius:8px;color:#1a3a5c;text-decoration:none;font-size:14px;font-weight:500;border:1px solid #e0e8f0;transition:all .15s}
+a:hover{background:#e3f0fc;border-color:#1a3a5c;transform:translateX(4px)}
+.tag{font-size:10px;background:#e3f0fc;color:#1a3a5c;padding:2px 8px;border-radius:3px;margin-left:8px;font-weight:400}
+footer{margin-top:40px;font-size:11px;color:#aaa;text-align:center}
+</style>
 </head>
 <body>
 <h1>業務改善舎 デモページ一覧</h1>
-<a href="abe-denki-demo/">安部電気様 業務管理デモ</a>
-<a href="masubuchi-demo/">増渕電気様 業務管理デモ</a>
-<a href="ids-gaichu-demo/">アイディーサービス様 業務管理デモ</a>
-<a href="kusamushiriya-demo/">草むしり屋様 業務管理デモ</a>
-<a href="kirara-demo/">きららハウスクリーニング様 業務管理デモ</a>
-<a href="osouji-planning-demo/">おそうじプランニング様 業務管理デモ</a>
-<a href="iwasa-hcs-demo/">イワサハウスクリーニング様 業務管理デモ</a>
-<a href="clean-rehome-demo/">Clean&Re:Home様 業務管理デモ</a>
-<a href="mc-2017-demo/">エムアンドシー様 業務管理デモ</a>
+<p>各お客様向けに作成した業務管理システムのデモです。</p>
 
-</html>
-<script>
-// machiyane-ageo-demo リンク追加
-document.querySelector('body').insertAdjacentHTML('beforeend', '<a href="machiyane-ageo-demo/" style="display:block;padding:12px;margin:8px 0;background:#e0f5fc;border-radius:6px;color:#0077aa;text-decoration:none">街の屋根やさん埼玉上尾店様 業務管理デモ</a>');
-</script>
+<div class="section">
+<div class="section-title">電気工事・エアコン</div>
+<a href="abe-denki-demo/">安部電気様 業務管理デモ<span class="tag">電気工事</span></a>
+<a href="masubuchi-demo/">増渕電気様 業務管理デモ<span class="tag">電気工事</span></a>
+<a href="yudendo-demo/">優電堂様 業務管理デモ<span class="tag">エアコン取付専門</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">ハウスクリーニング</div>
+<a href="kirara-demo/">きららハウスクリーニング様 業務管理デモ<span class="tag">ハウスクリーニング</span></a>
+<a href="osouji-planning-demo/">おそうじプランニング様 業務管理デモ<span class="tag">ハウスクリーニング</span></a>
+<a href="iwasa-hcs-demo/">イワサハウスクリーニング様 業務管理デモ<span class="tag">ハウスクリーニング</span></a>
+<a href="clean-rehome-demo/">Clean&Re:Home様 業務管理デモ<span class="tag">ハウスクリーニング</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">塗装・屋根・外構</div>
+<a href="mc-2017-demo/">エムアンドシー様 業務管理デモ<span class="tag">外壁塗装</span></a>
+<a href="machiyane-ageo-demo/">街の屋根やさん埼玉上尾店様 業務管理デモ<span class="tag">屋根工事</span></a>
+<a href="k-style-demo/">K-style川越様 業務管理デモ<span class="tag">外構・エクステリア</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">水道・給湯器・設備</div>
+<a href="ai-suidou-demo/">あい水道サービス様 業務管理デモ<span class="tag">水道修理</span></a>
+<a href="kirihana-demo/">株式会社桐花様 業務管理デモ<span class="tag">給湯器・設備</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">害虫駆除・清掃</div>
+<a href="ids-gaichu-demo/">アイディーサービス様 業務管理デモ<span class="tag">害虫駆除</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">庭・草刈り・便利屋</div>
+<a href="kusamushiriya-demo/">草むしり屋様 業務管理デモ<span class="tag">草刈り・空き家管理</span></a>
+<a href="yesman-demo/">便利屋イエスマン様 業務管理デモ<span class="tag">スーパー便利屋</span></a>
+</div>
+
+<div class="section">
+<div class="section-title">鍵・セキュリティ</div>
+<a href="art-lock-demo/">アートロックサービス様 業務管理デモ<span class="tag">鍵屋</span></a>
+</div>
+
+<footer>業務改善舎 | gyomu-kaizensha.com | forgeai.jp@gmail.com</footer>
 </body>
+</html>
