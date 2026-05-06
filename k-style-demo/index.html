@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>K-style川越 — 業務管理システム デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #3a6db5;
+  --blue-dark: #2a5095;
+  --blue-light: #e8f0f8;
+  --teal: #00b5b5;
+  --teal-dark: #008888;
+  --teal-light: #e0f8f8;
+  --tan: #c8a878;
+  --tan-light: #f8f2e8;
+  --white: #ffffff;
+  --gray: #666;
+  --gray-bg: #f4f6f9;
+  --text: #222;
+  --border: #d0dced;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--gray-bg); color: var(--text); min-height: 100vh; }
+
+.demo-bar {
+  background: #2a3a5a;
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.layout { display: flex; min-height: calc(100vh - 38px); }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--blue);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 38px; left: 0;
+  height: calc(100vh - 38px);
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.sidebar-logo .company { font-size: 17px; font-weight: 700; }
+.sidebar-logo .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.sidebar-menu { padding: 12px 0; flex: 1; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.menu-item:hover { background: rgba(255,255,255,0.1); }
+.menu-item.active { background: var(--blue-dark); border-left-color: var(--teal); font-weight: 700; }
+.menu-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.sidebar-footer { padding: 16px 20px; font-size: 11px; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.2); }
+
+.main { margin-left: var(--sidebar-w); padding: 28px 32px; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--blue-dark); margin-bottom: 20px; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(58,109,181,0.1);
+  border-top: 4px solid var(--blue);
+}
+.kpi-card.teal { border-top-color: var(--teal); }
+.kpi-card.tan { border-top-color: var(--tan); }
+.kpi-card.green { border-top-color: #22c55e; }
+.kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 700; color: var(--text); }
+.kpi-unit { font-size: 14px; font-weight: 400; margin-left: 4px; color: var(--gray); }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 6px; }
+
+.section { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(58,109,181,0.07); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--blue-dark); margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--blue-light); color: var(--blue-dark); font-weight: 700; padding: 10px 12px; text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #e8eef5; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--blue-light); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-blue { background: var(--blue-light); color: var(--blue-dark); }
+.badge-teal { background: var(--teal-light); color: var(--teal-dark); }
+.badge-tan { background: var(--tan-light); color: #7a5020; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-orange { background: #fff3e0; color: #e65100; }
+.badge-red { background: #fce4ec; color: #b71c1c; }
+.badge-gray { background: #f5f5f5; color: #555; }
+
+/* 案件カード */
+.project-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.project-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fff;
+}
+.project-card-title { font-weight: 700; font-size: 13px; color: var(--blue-dark); margin-bottom: 6px; }
+.project-card-info { font-size: 12px; color: var(--gray); line-height: 1.7; }
+.project-progress { margin-top: 10px; }
+.progress-label { display: flex; justify-content: space-between; font-size: 11px; color: var(--gray); margin-bottom: 4px; }
+.progress-bar { height: 6px; background: #e0e8f0; border-radius: 3px; }
+.progress-fill { height: 6px; background: var(--teal); border-radius: 3px; }
+
+/* 見積 */
+.form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 700; color: var(--gray); display: block; margin-bottom: 6px; }
+.form-group select, .form-group input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text); background: #fff;
+}
+.form-group select:focus, .form-group input:focus {
+  outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(0,181,181,0.12);
+}
+.result-box {
+  background: var(--teal-light);
+  border: 1px solid #b0e0e0;
+  border-radius: 8px;
+  padding: 18px 24px;
+  margin-top: 8px;
+}
+.result-line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.result-line .label { color: var(--gray); }
+.total { font-size: 28px; font-weight: 700; color: var(--teal-dark); }
+.btn {
+  background: var(--teal);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--teal-dark); }
+.btn-outline { background: #fff; color: var(--teal); border: 2px solid var(--teal); }
+.btn-outline:hover { background: var(--teal-light); }
+
+.report-preview { border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; background: #fff; max-width: 700px; }
+.report-header { text-align: center; margin-bottom: 24px; }
+.report-header h2 { font-size: 20px; font-weight: 700; color: var(--blue-dark); }
+.report-header p { font-size: 13px; color: var(--gray); margin-top: 4px; }
+.report-section { margin-bottom: 18px; }
+.report-section h3 { font-size: 14px; font-weight: 700; color: var(--blue-dark); border-bottom: 2px solid var(--teal-light); padding-bottom: 6px; margin-bottom: 10px; }
+.report-grid { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; font-size: 13px; }
+.report-grid .rk { color: var(--gray); font-weight: 500; }
+.maintenance-box {
+  background: var(--tan-light);
+  border: 1px solid var(--tan);
+  border-radius: 8px;
+  padding: 14px 18px;
+  font-size: 13px;
+}
+.maintenance-box h4 { font-size: 14px; font-weight: 700; color: #7a5020; margin-bottom: 6px; }
+.maintenance-item { display: flex; justify-content: space-between; padding: 3px 0; color: #5a4010; }
+footer { margin-left: var(--sidebar-w); text-align: center; padding: 16px; font-size: 12px; color: var(--gray); background: #fff; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — 株式会社K-style様向け 業務管理システム イメージ（業務改善舎 ケンイチ 作成）</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="company">🏗️ 株式会社K-style</div>
+      <div class="sub">外構・エクステリア 業務管理</div>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> ダッシュボード
+      </div>
+      <div class="menu-item" onclick="showPage('customers', this)">
+        <span class="icon">👥</span> 顧客管理
+      </div>
+      <div class="menu-item" onclick="showPage('quote', this)">
+        <span class="icon">📋</span> 見積書
+      </div>
+      <div class="menu-item" onclick="showPage('report', this)">
+        <span class="icon">📄</span> 施工完了報告書
+      </div>
+    </div>
+    <div class="sidebar-footer">業務改善舎 ケンイチ</div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ダッシュボード -->
+    <div id="dashboard" class="page active">
+      <div class="page-title">📊 ダッシュボード</div>
+      <div class="kpi-grid">
+        <div class="kpi-card tan">
+          <div class="kpi-label">メンテナンス時期の顧客</div>
+          <div class="kpi-value">9<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">ウッドデッキ再塗装・ひび割れ補修など</div>
+        </div>
+        <div class="kpi-card teal">
+          <div class="kpi-label">今月進行中案件</div>
+          <div class="kpi-value">7<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">設計中2・施工中5</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">見積提出件数（今月）</div>
+          <div class="kpi-value">18<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">受注率 61%</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">累計施工実績</div>
+          <div class="kpi-value">347<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">川越市を中心に埼玉全域</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">🔔 メンテナンス案内 — 今後6ヶ月以内に時期到来</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>施工内容</th><th>施工年</th><th>メンテナンス種別</th><th>推奨時期</th><th>状況</th></tr></thead>
+          <tbody>
+            <tr><td>木下 一郎</td><td>ウッドデッキ</td><td>2019年</td><td>再塗装・補修（5〜7年）</td><td>2026-06頃</td><td><span class="badge badge-red">案内急ぎ</span></td></tr>
+            <tr><td>長谷川 建設</td><td>駐車場コンクリート</td><td>2013年</td><td>ひび割れ補修（10〜15年）</td><td>2026-07頃</td><td><span class="badge badge-orange">案内済</span></td></tr>
+            <tr><td>村上 久美子</td><td>ウッドデッキ+フェンス</td><td>2020年</td><td>塗装・部材交換（5〜7年）</td><td>2026-08頃</td><td><span class="badge badge-tan">未案内</span></td></tr>
+            <tr><td>田村 工業</td><td>カーポート</td><td>2016年</td><td>点検・清掃（10年）</td><td>2026-09頃</td><td><span class="badge badge-tan">未案内</span></td></tr>
+            <tr><td>橋本 明子</td><td>土間コンクリート</td><td>2014年</td><td>補修（10〜15年）</td><td>2026-09頃</td><td><span class="badge badge-teal">連絡済</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">🏗️ 進行中案件</div>
+        <div class="project-grid">
+          <div class="project-card">
+            <div class="project-card-title">土間コンクリート新設</div>
+            <div class="project-card-info">
+              顧客：山田 悟<br>
+              場所：川越市霞ヶ関<br>
+              面積：32㎡ / プレミアム
+            </div>
+            <div class="project-progress">
+              <div class="progress-label"><span>施工中</span><span>65%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:65%"></div></div>
+            </div>
+          </div>
+          <div class="project-card">
+            <div class="project-card-title">カーポート設置+ウッドデッキ</div>
+            <div class="project-card-info">
+              顧客：大塚 幸子<br>
+              場所：川越市仙波町<br>
+              スタンダード仕様
+            </div>
+            <div class="project-progress">
+              <div class="progress-label"><span>基礎工事完了</span><span>40%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:40%"></div></div>
+            </div>
+          </div>
+          <div class="project-card">
+            <div class="project-card-title">リガーデン一式</div>
+            <div class="project-card-info">
+              顧客：小川 淳子<br>
+              場所：川越市今福<br>
+              フェンス+植栽+コンクリ
+            </div>
+            <div class="project-progress">
+              <div class="progress-label"><span>設計確認中</span><span>20%</span></div>
+              <div class="progress-bar"><div class="progress-fill" style="width:20%"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顧客管理 -->
+    <div id="customers" class="page">
+      <div class="page-title">👥 顧客管理 — メンテナンスフォロー</div>
+      <div class="section">
+        <div class="section-title">🏡 施工済み顧客一覧</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>施工内容</th><th>施工日</th><th>金額（概算）</th><th>メンテ推奨時期</th><th>フォロー状況</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>木下 一郎</strong></td>
+              <td>ウッドデッキ（18㎡）</td>
+              <td>2019-04-15</td>
+              <td>85万円</td>
+              <td>2024〜2026年（塗装）</td>
+              <td><span class="badge badge-red">案内急ぎ</span></td>
+            </tr>
+            <tr>
+              <td><strong>長谷川 建設（法人）</strong></td>
+              <td>駐車場コンクリ（60㎡）</td>
+              <td>2013-09-03</td>
+              <td>150万円</td>
+              <td>2023〜2028年（補修）</td>
+              <td><span class="badge badge-orange">案内済</span></td>
+            </tr>
+            <tr>
+              <td><strong>村上 久美子</strong></td>
+              <td>ウッドデッキ+フェンス</td>
+              <td>2020-06-20</td>
+              <td>120万円</td>
+              <td>2025〜2027年（塗装）</td>
+              <td><span class="badge badge-tan">未案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>田村 工業（法人）</strong></td>
+              <td>カーポート（2台用）</td>
+              <td>2016-03-10</td>
+              <td>95万円</td>
+              <td>2026年（10年点検）</td>
+              <td><span class="badge badge-tan">未案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>橋本 明子</strong></td>
+              <td>土間コンクリ（40㎡）</td>
+              <td>2014-05-22</td>
+              <td>110万円</td>
+              <td>2024〜2029年（補修）</td>
+              <td><span class="badge badge-teal">連絡済</span></td>
+            </tr>
+            <tr>
+              <td><strong>山田 悟</strong></td>
+              <td>施工中（土間コンクリ）</td>
+              <td>2026-04-28〜</td>
+              <td>見積180万円</td>
+              <td>2031〜2036年（予定）</td>
+              <td><span class="badge badge-blue">施工中</span></td>
+            </tr>
+            <tr>
+              <td><strong>大塚 幸子</strong></td>
+              <td>施工中（CP+デッキ）</td>
+              <td>2026-05-01〜</td>
+              <td>見積220万円</td>
+              <td>2031〜2033年（予定）</td>
+              <td><span class="badge badge-blue">施工中</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 見積書 -->
+    <div id="quote" class="page">
+      <div class="page-title">📋 見積書作成</div>
+      <div class="section">
+        <div class="section-title">⚙️ 施工内容・仕様を選択</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>施工種別</label>
+            <select id="q-type" onchange="calcQuote()">
+              <option value="concrete">土間コンクリート</option>
+              <option value="carport">カーポート設置</option>
+              <option value="deck">ウッドデッキ</option>
+              <option value="fence">フェンス</option>
+              <option value="planting">植栽・庭造り</option>
+              <option value="regarden">リガーデン一式</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>面積・数量（㎡ または 台）</label>
+            <input type="number" id="q-area" value="20" min="1" onchange="calcQuote()">
+          </div>
+          <div class="form-group">
+            <label>材料グレード</label>
+            <select id="q-grade" onchange="calcQuote()">
+              <option value="1.0">スタンダード</option>
+              <option value="1.4">プレミアム（+40%）</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>解体・撤去</label>
+            <select id="q-demo" onchange="calcQuote()">
+              <option value="0">なし</option>
+              <option value="50000">既存構造物あり（+5万円〜）</option>
+              <option value="100000">大規模撤去（+10万円〜）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>デザイン費・設計費</label>
+            <select id="q-design" onchange="calcQuote()">
+              <option value="0">なし（シンプル）</option>
+              <option value="30000">カラープラン作成（+3万円）</option>
+              <option value="60000">フルデザイン提案（+6万円）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>照明・外灯</label>
+            <select id="q-light" onchange="calcQuote()">
+              <option value="0">なし</option>
+              <option value="30000">アクセント照明（+3万円〜）</option>
+              <option value="80000">本格外灯設備（+8万円〜）</option>
+            </select>
+          </div>
+        </div>
+        <div class="result-box">
+          <div id="q-breakdown"></div>
+          <div style="border-top:2px solid var(--teal);margin:10px 0;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--teal-dark);">お見積り合計（税込）</span>
+            <span class="total" id="q-total">—</span>
+          </div>
+          <div style="font-size:11px;color:var(--gray);margin-top:6px;">※現地調査後に正式見積提出 / 材料価格変動による変更あり</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】見積書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 報告書 -->
+    <div id="report" class="page">
+      <div class="page-title">📄 施工完了報告書</div>
+      <div class="section">
+        <div class="report-preview">
+          <div class="report-header">
+            <h2>🏗️ 外構施工完了報告書</h2>
+            <p>株式会社K-style | 発行日：2026年5月6日</p>
+          </div>
+          <div class="report-section">
+            <h3>お客様情報</h3>
+            <div class="report-grid">
+              <span class="rk">お客様名</span><span class="rv">山田 悟 様</span>
+              <span class="rk">住所</span><span class="rv">埼玉県川越市霞ヶ関〇〇 2-3</span>
+              <span class="rk">TEL</span><span class="rv">049-XXX-XXXX</span>
+              <span class="rk">施工期間</span><span class="rv">2026年4月28日〜5月6日</span>
+              <span class="rk">担当スタッフ</span><span class="rv">川島 賢一（現場責任者）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>施工内容</h3>
+            <div class="report-grid">
+              <span class="rk">施工種別</span><span class="rv">土間コンクリート新設</span>
+              <span class="rk">面積</span><span class="rv">32㎡（駐車スペース2台分）</span>
+              <span class="rk">グレード</span><span class="rv">プレミアム（洗い出し仕上げ）</span>
+              <span class="rk">付帯工事</span><span class="rv">既存砂利撤去・排水ます設置</span>
+              <span class="rk">施工金額</span><span class="rv">1,782,000円（税込）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>アフターメンテナンス案内</h3>
+            <div class="maintenance-box">
+              <h4>🔧 推奨メンテナンス時期</h4>
+              <div class="maintenance-item"><span>コンクリートひび割れ点検</span><span>施工後5年目（2031年頃）</span></div>
+              <div class="maintenance-item"><span>補修・打ち継ぎ</span><span>施工後10〜15年目（2036〜41年頃）</span></div>
+              <div class="maintenance-item"><span>外構リフォーム相談</span><span>いつでもご相談ください</span></div>
+              <div style="font-size:11px;color:#888;margin-top:8px;">※時期が近づいたらK-styleよりご連絡いたします</div>
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--gray);margin-top:16px;">
+            株式会社K-style | 川越市 | 外構・エクステリア・DIY・庭造り
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】報告書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF保存</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>業務改善舎 ケンイチ 制作 | デモ画面のため実際の業務には使用できません</footer>
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+const typeRates = {
+  concrete: { label: '土間コンクリート', unitPrice: 15000, unit: '㎡' },
+  carport:  { label: 'カーポート設置', unitPrice: 200000, unit: '台' },
+  deck:     { label: 'ウッドデッキ', unitPrice: 18000, unit: '㎡' },
+  fence:    { label: 'フェンス', unitPrice: 12000, unit: 'm' },
+  planting: { label: '植栽・庭造り', unitPrice: 20000, unit: '㎡' },
+  regarden: { label: 'リガーデン一式', unitPrice: 25000, unit: '㎡' },
+};
+
+function calcQuote() {
+  const type = document.getElementById('q-type').value;
+  const area = parseFloat(document.getElementById('q-area').value) || 20;
+  const grade = parseFloat(document.getElementById('q-grade').value) || 1.0;
+  const demo = parseInt(document.getElementById('q-demo').value) || 0;
+  const design = parseInt(document.getElementById('q-design').value) || 0;
+  const light = parseInt(document.getElementById('q-light').value) || 0;
+
+  const t = typeRates[type];
+  const materialBase = t.unitPrice * area * grade;
+  const total = materialBase + demo + design + light;
+  const tax = Math.round(total * 0.1);
+  const totalWithTax = total + tax;
+
+  let html = '';
+  html += `<div class="result-line"><span class="label">${t.label}（${t.unitPrice.toLocaleString()}円/${t.unit} × ${area}${t.unit}${grade > 1 ? ' × プレミアム' : ''}）</span><span>${materialBase.toLocaleString()}円</span></div>`;
+  if (demo) html += `<div class="result-line"><span class="label">解体・撤去費</span><span>+${demo.toLocaleString()}円</span></div>`;
+  if (design) html += `<div class="result-line"><span class="label">デザイン・設計費</span><span>+${design.toLocaleString()}円</span></div>`;
+  if (light) html += `<div class="result-line"><span class="label">照明・外灯設備</span><span>+${light.toLocaleString()}円</span></div>`;
+  html += `<div class="result-line"><span class="label">消費税（10%）</span><span>${tax.toLocaleString()}円</span></div>`;
+
+  document.getElementById('q-breakdown').innerHTML = html;
+  document.getElementById('q-total').textContent = totalWithTax.toLocaleString() + '円';
+}
+
+calcQuote();
+</script>
+</body>
+</html>

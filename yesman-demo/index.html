@@ -1,0 +1,524 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>イエスマン — 業務管理システム デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --orange: #f56020;
+  --orange-dark: #c04010;
+  --orange-light: #fff3ee;
+  --gray: #555555;
+  --gray-bg: #f5f5f5;
+  --white: #ffffff;
+  --text: #222;
+  --border: #e8d8d0;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--gray-bg); color: var(--text); min-height: 100vh; }
+
+.demo-bar {
+  background: #1a1a1a;
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.layout { display: flex; min-height: calc(100vh - 38px); }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: linear-gradient(180deg, var(--orange) 0%, var(--orange-dark) 100%);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 38px; left: 0;
+  height: calc(100vh - 38px);
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.sidebar-logo .company { font-size: 16px; font-weight: 700; }
+.sidebar-logo .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.sidebar-menu { padding: 12px 0; flex: 1; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.menu-item:hover { background: rgba(255,255,255,0.1); }
+.menu-item.active { background: rgba(0,0,0,0.2); border-left-color: #fff; font-weight: 700; }
+.menu-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.sidebar-footer { padding: 16px 20px; font-size: 11px; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.2); }
+
+.main { margin-left: var(--sidebar-w); padding: 28px 32px; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--orange-dark); margin-bottom: 20px; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(200,80,20,0.1);
+  border-top: 4px solid var(--orange);
+}
+.kpi-card.gray { border-top-color: var(--gray); }
+.kpi-card.green { border-top-color: #22c55e; }
+.kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 700; color: var(--text); }
+.kpi-unit { font-size: 14px; font-weight: 400; margin-left: 4px; color: var(--gray); }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 6px; }
+
+.section { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(200,80,20,0.07); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--orange-dark); margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--orange-light); color: var(--orange-dark); font-weight: 700; padding: 10px 12px; text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #f0e8e4; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--orange-light); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-orange { background: #fff3ee; color: var(--orange-dark); }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-gray { background: #f5f5f5; color: #555; }
+.badge-red { background: #fce4ec; color: #b71c1c; }
+.badge-blue { background: #e3f2fd; color: #1565c0; }
+
+/* スタッフ稼働 */
+.staff-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.staff-card {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: #fff;
+}
+.staff-name { font-weight: 700; font-size: 14px; margin-bottom: 6px; }
+.staff-jobs { font-size: 12px; color: var(--gray); }
+.staff-badge { margin-top: 8px; }
+.progress-bar { height: 6px; background: #eee; border-radius: 3px; margin-top: 6px; }
+.progress-fill { height: 6px; background: var(--orange); border-radius: 3px; }
+
+/* 見積 */
+.quote-form { display: grid; gap: 16px; }
+.form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.form-group label { font-size: 12px; font-weight: 700; color: var(--gray); display: block; margin-bottom: 6px; }
+.form-group select, .form-group input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text); background: #fff;
+}
+.form-group select:focus, .form-group input:focus {
+  outline: none; border-color: var(--orange); box-shadow: 0 0 0 3px rgba(245,96,32,0.12);
+}
+.result-box {
+  background: var(--orange-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 24px;
+  margin-top: 8px;
+}
+.result-line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.result-line .label { color: var(--gray); }
+.total { font-size: 28px; font-weight: 700; color: var(--orange-dark); }
+.btn {
+  background: var(--orange);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--orange-dark); }
+.btn-outline { background: #fff; color: var(--orange); border: 2px solid var(--orange); }
+.btn-outline:hover { background: var(--orange-light); }
+
+.report-preview { border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; background: #fff; max-width: 700px; }
+.report-header { text-align: center; margin-bottom: 24px; }
+.report-header h2 { font-size: 20px; font-weight: 700; color: var(--orange-dark); }
+.report-header p { font-size: 13px; color: var(--gray); margin-top: 4px; }
+.report-section { margin-bottom: 18px; }
+.report-section h3 { font-size: 14px; font-weight: 700; color: var(--orange-dark); border-bottom: 2px solid var(--orange-light); padding-bottom: 6px; margin-bottom: 10px; }
+.report-grid { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+.report-grid .rk { color: var(--gray); font-weight: 500; }
+.next-notice { background: #fff8f0; border: 1px solid #ffd0b0; border-radius: 8px; padding: 12px 16px; font-size: 13px; margin-top: 12px; }
+footer { margin-left: var(--sidebar-w); text-align: center; padding: 16px; font-size: 12px; color: var(--gray); background: #fff; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — 便利屋イエスマン様向け 業務管理システム イメージ（業務改善舎 ケンイチ 作成）</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="company">🔧 出張ホームセンター<br>イエスマン</div>
+      <div class="sub">業務管理システム</div>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> ダッシュボード
+      </div>
+      <div class="menu-item" onclick="showPage('customers', this)">
+        <span class="icon">👥</span> 顧客管理
+      </div>
+      <div class="menu-item" onclick="showPage('quote', this)">
+        <span class="icon">📋</span> 見積書
+      </div>
+      <div class="menu-item" onclick="showPage('report', this)">
+        <span class="icon">📄</span> 作業完了報告書
+      </div>
+    </div>
+    <div class="sidebar-footer">業務改善舎 ケンイチ</div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ダッシュボード -->
+    <div id="dashboard" class="page active">
+      <div class="page-title">📊 ダッシュボード</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">今日の予約件数</div>
+          <div class="kpi-value">8<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">8:30〜20:00 受付</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">今月完了件数</div>
+          <div class="kpi-value">142<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">前月比 +18件</div>
+        </div>
+        <div class="kpi-card gray">
+          <div class="kpi-label">稼働中スタッフ</div>
+          <div class="kpi-value">4<span class="kpi-unit">名</span></div>
+          <div class="kpi-sub">全6名中</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">今月売上（概算）</div>
+          <div class="kpi-value">87<span class="kpi-unit">万円</span></div>
+          <div class="kpi-sub">目標100万円</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📅 本日の作業スケジュール（2026年5月6日）</div>
+        <table>
+          <thead><tr><th>時間</th><th>顧客名</th><th>エリア</th><th>サービス</th><th>担当</th><th>ステータス</th></tr></thead>
+          <tbody>
+            <tr><td>9:00</td><td>佐々木 勝子</td><td>さいたま市北区</td><td>ハウスクリーニング（3LDK）</td><td>山田・鈴木</td><td><span class="badge badge-green">完了</span></td></tr>
+            <tr><td>10:30</td><td>木村 正樹</td><td>川口市</td><td>エアコンクリーニング×2台</td><td>田中</td><td><span class="badge badge-green">完了</span></td></tr>
+            <tr><td>13:00</td><td>渡辺 商事</td><td>東京都豊島区</td><td>業務用エアコンクリーニング×4台</td><td>山田・田中</td><td><span class="badge badge-orange">作業中</span></td></tr>
+            <tr><td>14:00</td><td>大野 正子</td><td>上尾市</td><td>庭木剪定</td><td>鈴木</td><td><span class="badge badge-blue">移動中</span></td></tr>
+            <tr><td>15:30</td><td>石川 宏</td><td>東京都板橋区</td><td>不用品回収</td><td>山田</td><td><span class="badge badge-gray">予定</span></td></tr>
+            <tr><td>16:00</td><td>前田 由美子</td><td>所沢市</td><td>水回り補修</td><td>田中</td><td><span class="badge badge-gray">予定</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">👷 スタッフ稼働状況</div>
+        <div class="staff-grid">
+          <div class="staff-card">
+            <div class="staff-name">山田 健太</div>
+            <div class="staff-jobs">本日3件 | 累計58件</div>
+            <div class="staff-badge"><span class="badge badge-orange">稼働中</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:75%"></div></div>
+          </div>
+          <div class="staff-card">
+            <div class="staff-name">田中 誠</div>
+            <div class="staff-jobs">本日3件 | 累計62件</div>
+            <div class="staff-badge"><span class="badge badge-orange">稼働中</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:80%"></div></div>
+          </div>
+          <div class="staff-card">
+            <div class="staff-name">鈴木 隆</div>
+            <div class="staff-jobs">本日2件 | 累計44件</div>
+            <div class="staff-badge"><span class="badge badge-blue">移動中</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:55%"></div></div>
+          </div>
+          <div class="staff-card">
+            <div class="staff-name">佐藤 剛</div>
+            <div class="staff-jobs">本日1件 | 累計38件</div>
+            <div class="staff-badge"><span class="badge badge-green">完了待機</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:30%"></div></div>
+          </div>
+          <div class="staff-card">
+            <div class="staff-name">加藤 文雄</div>
+            <div class="staff-jobs">本日0件 | 累計27件</div>
+            <div class="staff-badge"><span class="badge badge-gray">休日</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+          </div>
+          <div class="staff-card">
+            <div class="staff-name">伊藤 俊</div>
+            <div class="staff-jobs">本日0件 | 累計19件</div>
+            <div class="staff-badge"><span class="badge badge-gray">休日</span></div>
+            <div class="progress-bar"><div class="progress-fill" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 顧客管理 -->
+    <div id="customers" class="page">
+      <div class="page-title">👥 顧客管理 — リピートフォロー</div>
+      <div class="section">
+        <div class="section-title">🔄 定期フォロー対象顧客</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>エリア</th><th>主なサービス</th><th>直近利用日</th><th>次回案内目安</th><th>フォロー状況</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>佐々木 勝子</strong></td>
+              <td>さいたま市北区</td>
+              <td>ハウスクリーニング</td>
+              <td>2026-05-06</td>
+              <td>2026-11月頃（半年後）</td>
+              <td><span class="badge badge-green">完了済</span></td>
+            </tr>
+            <tr>
+              <td><strong>木村 正樹</strong></td>
+              <td>川口市</td>
+              <td>エアコンクリーニング</td>
+              <td>2026-05-06</td>
+              <td>2027-05月頃（年1回）</td>
+              <td><span class="badge badge-green">完了済</span></td>
+            </tr>
+            <tr>
+              <td><strong>大野 正子</strong></td>
+              <td>上尾市</td>
+              <td>庭木剪定</td>
+              <td>2026-05-06</td>
+              <td>2026-10月頃（秋剪定）</td>
+              <td><span class="badge badge-blue">作業中</span></td>
+            </tr>
+            <tr>
+              <td><strong>渡辺 商事（法人）</strong></td>
+              <td>東京都豊島区</td>
+              <td>業務用エアコンクリーニング</td>
+              <td>2026-05-06</td>
+              <td>2026-11月頃</td>
+              <td><span class="badge badge-blue">作業中</span></td>
+            </tr>
+            <tr>
+              <td><strong>石川 宏</strong></td>
+              <td>東京都板橋区</td>
+              <td>不用品回収・整理</td>
+              <td>2025-12-10</td>
+              <td>随時（依頼ベース）</td>
+              <td><span class="badge badge-gray">次回案内不要</span></td>
+            </tr>
+            <tr>
+              <td><strong>前田 由美子</strong></td>
+              <td>所沢市</td>
+              <td>水回り補修</td>
+              <td>2026-02-22</td>
+              <td>5年後メンテナンス案内</td>
+              <td><span class="badge badge-orange">要フォロー</span></td>
+            </tr>
+            <tr>
+              <td><strong>中野 建設（法人）</strong></td>
+              <td>東京都中野区</td>
+              <td>引越し作業</td>
+              <td>2026-03-15</td>
+              <td>随時（依頼ベース）</td>
+              <td><span class="badge badge-gray">案内不要</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 見積書 -->
+    <div id="quote" class="page">
+      <div class="page-title">📋 見積書作成</div>
+      <div class="section">
+        <div class="section-title">⚙️ サービス・作業内容を選択</div>
+        <div class="quote-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>サービス種別</label>
+              <select id="q-service" onchange="calcQuote()">
+                <option value="house_clean">ハウスクリーニング</option>
+                <option value="ac_clean">エアコンクリーニング</option>
+                <option value="garden">庭木剪定</option>
+                <option value="water">水回り補修・リフォーム</option>
+                <option value="junk">不用品回収</option>
+                <option value="move">引越し作業</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>スタッフ数</label>
+              <select id="q-staff" onchange="calcQuote()">
+                <option value="1">1名</option>
+                <option value="2">2名</option>
+                <option value="3">3名</option>
+                <option value="4">4名以上（要相談）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>作業時間見込み（時間）</label>
+              <input type="number" id="q-hours" value="2" min="1" max="12" step="0.5" onchange="calcQuote()">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>エリア（交通費）</label>
+              <select id="q-area" onchange="calcQuote()">
+                <option value="0">埼玉県内（無料）</option>
+                <option value="2000">東京23区（+2,000円）</option>
+                <option value="3000">都内その他（+3,000円）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>特急対応</label>
+              <select id="q-express" onchange="calcQuote()">
+                <option value="0">通常対応</option>
+                <option value="3000">特急（当日〜翌日）+3,000円</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>廃棄物処分</label>
+              <select id="q-waste" onchange="calcQuote()">
+                <option value="0">なし</option>
+                <option value="3300">あり（45L袋1〜2袋）</option>
+                <option value="5500">あり（大量：要別途相談）</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="result-box">
+          <div id="q-breakdown"></div>
+          <div style="border-top:2px solid var(--orange);margin:10px 0;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--orange-dark);">お見積り合計（税込）</span>
+            <span class="total" id="q-total">—</span>
+          </div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】見積書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 報告書 -->
+    <div id="report" class="page">
+      <div class="page-title">📄 作業完了報告書</div>
+      <div class="section">
+        <div class="report-preview">
+          <div class="report-header">
+            <h2>🔧 作業完了報告書</h2>
+            <p>出張ホームセンター イエスマン | 発行日：2026年5月6日</p>
+          </div>
+          <div class="report-section">
+            <h3>お客様情報</h3>
+            <div class="report-grid">
+              <span class="rk">お客様名</span><span class="rv">木村 正樹 様</span>
+              <span class="rk">住所</span><span class="rv">埼玉県川口市〇〇 3-1-5</span>
+              <span class="rk">TEL</span><span class="rv">048-XXX-XXXX</span>
+              <span class="rk">作業日</span><span class="rv">2026年5月6日（火）10:30〜11:30</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>作業内容</h3>
+            <div class="report-grid">
+              <span class="rk">サービス</span><span class="rv">エアコンクリーニング</span>
+              <span class="rk">台数</span><span class="rv">2台（リビング・寝室）</span>
+              <span class="rk">担当スタッフ</span><span class="rv">田中 誠</span>
+              <span class="rk">作業時間</span><span class="rv">1時間（10:30〜11:30）</span>
+              <span class="rk">作業結果</span><span class="rv">フィルター洗浄・内部クリーニング完了。異常なし</span>
+              <span class="rk">作業金額</span><span class="rv">16,500円（税込）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>次回おすすめのご案内</h3>
+            <div class="next-notice">
+              🔔 <strong>エアコンクリーニング：次回案内目安 2027年5月頃</strong><br>
+              年1回のクリーニングで電気代節約・空気清潔を維持できます。<br>
+              また<strong>ハウスクリーニング・庭木剪定・水回り補修</strong>など、なんでもお任せください。<br>
+              <span style="font-size:11px;color:#888;">受付 8:30〜20:00 年中無休 | 埼玉県全域・東京23区・都内一部対応</span>
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--gray);margin-top:16px;">
+            出張ホームセンター イエスマン
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】報告書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF保存</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>業務改善舎 ケンイチ 制作 | デモ画面のため実際の業務には使用できません</footer>
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+const serviceRates = {
+  house_clean: { label: 'ハウスクリーニング', staffRate: 4000, baseLabel: 'スタッフ単価（1名/1時間）' },
+  ac_clean:    { label: 'エアコンクリーニング', staffRate: 6000, baseLabel: '1台あたり料金（時間換算）' },
+  garden:      { label: '庭木剪定', staffRate: 3500, baseLabel: 'スタッフ単価（1名/1時間）' },
+  water:       { label: '水回り補修', staffRate: 5000, baseLabel: 'スタッフ単価（1名/1時間）' },
+  junk:        { label: '不用品回収', staffRate: 3500, baseLabel: 'スタッフ単価（1名/1時間）' },
+  move:        { label: '引越し作業', staffRate: 4500, baseLabel: 'スタッフ単価（1名/1時間）' },
+};
+
+function calcQuote() {
+  const svc = document.getElementById('q-service').value;
+  const staffCount = parseInt(document.getElementById('q-staff').value) || 1;
+  const hours = parseFloat(document.getElementById('q-hours').value) || 2;
+  const area = parseInt(document.getElementById('q-area').value) || 0;
+  const express = parseInt(document.getElementById('q-express').value) || 0;
+  const waste = parseInt(document.getElementById('q-waste').value) || 0;
+
+  const s = serviceRates[svc];
+  const labor = s.staffRate * staffCount * hours;
+  const total = labor + area + express + waste;
+  const tax = Math.round(total * 0.1);
+  const totalWithTax = total + tax;
+
+  let html = '';
+  html += `<div class="result-line"><span class="label">${s.label}（${s.staffRate.toLocaleString()}円 × ${staffCount}名 × ${hours}h）</span><span>${labor.toLocaleString()}円</span></div>`;
+  if (area) html += `<div class="result-line"><span class="label">エリア交通費</span><span>+${area.toLocaleString()}円</span></div>`;
+  if (express) html += `<div class="result-line"><span class="label">特急対応料</span><span>+${express.toLocaleString()}円</span></div>`;
+  if (waste) html += `<div class="result-line"><span class="label">廃棄物処分費</span><span>+${waste.toLocaleString()}円</span></div>`;
+  html += `<div class="result-line"><span class="label">消費税（10%）</span><span>${tax.toLocaleString()}円</span></div>`;
+
+  document.getElementById('q-breakdown').innerHTML = html;
+  document.getElementById('q-total').textContent = totalWithTax.toLocaleString() + '円';
+}
+
+calcQuote();
+</script>
+</body>
+</html>

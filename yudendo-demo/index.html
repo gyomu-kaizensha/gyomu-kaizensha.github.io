@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>優電堂 — 業務管理システム デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --blue: #1e90ff;
+  --blue-dark: #0070dd;
+  --blue-light: #e8f4ff;
+  --white: #ffffff;
+  --gray-light: #f5f7fa;
+  --gray: #888;
+  --text: #222;
+  --border: #d0e4f7;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--gray-light); color: var(--text); min-height: 100vh; }
+
+/* デモバー */
+.demo-bar {
+  background: #ff6b00;
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  position: sticky; top: 0; z-index: 100;
+}
+
+/* レイアウト */
+.layout { display: flex; min-height: calc(100vh - 38px); }
+
+/* サイドバー */
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--blue);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 38px; left: 0;
+  height: calc(100vh - 38px);
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.sidebar-logo .company { font-size: 18px; font-weight: 700; }
+.sidebar-logo .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.sidebar-menu { padding: 12px 0; flex: 1; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.menu-item:hover { background: rgba(255,255,255,0.1); }
+.menu-item.active { background: var(--blue-dark); border-left-color: #fff; font-weight: 700; }
+.menu-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.sidebar-footer { padding: 16px 20px; font-size: 11px; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.2); }
+
+/* メインコンテンツ */
+.main { margin-left: var(--sidebar-w); padding: 28px 32px; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--blue-dark); margin-bottom: 20px; }
+
+/* KPIカード */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(0,80,180,0.08);
+  border-top: 4px solid var(--blue);
+}
+.kpi-card.warn { border-top-color: #f56020; }
+.kpi-card.ok { border-top-color: #22c55e; }
+.kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 700; color: var(--text); }
+.kpi-unit { font-size: 14px; font-weight: 400; margin-left: 4px; color: var(--gray); }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 6px; }
+
+/* テーブル共通 */
+.section { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(0,80,180,0.07); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--blue-dark); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--blue-light); color: var(--blue-dark); font-weight: 700; padding: 10px 12px; text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #eef4fb; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--blue-light); }
+
+/* バッジ */
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-blue { background: var(--blue-light); color: var(--blue-dark); }
+.badge-orange { background: #fff3e0; color: #e65100; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-red { background: #fce4ec; color: #b71c1c; }
+.badge-gray { background: #f5f5f5; color: #555; }
+
+/* 見積書 */
+.quote-form { display: grid; gap: 16px; }
+.form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.form-group label { font-size: 12px; font-weight: 700; color: var(--gray); display: block; margin-bottom: 6px; }
+.form-group select, .form-group input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 14px; font-family: inherit;
+  color: var(--text); background: #fff;
+}
+.form-group select:focus, .form-group input:focus {
+  outline: none; border-color: var(--blue); box-shadow: 0 0 0 3px rgba(30,144,255,0.12);
+}
+.result-box {
+  background: var(--blue-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 24px;
+  margin-top: 8px;
+}
+.result-box .total { font-size: 28px; font-weight: 700; color: var(--blue-dark); }
+.result-line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.result-line .label { color: var(--gray); }
+.btn {
+  background: var(--blue);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--blue-dark); }
+.btn-outline {
+  background: #fff;
+  color: var(--blue);
+  border: 2px solid var(--blue);
+}
+.btn-outline:hover { background: var(--blue-light); }
+
+/* 報告書 */
+.report-preview {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 28px 32px;
+  background: #fff;
+  max-width: 700px;
+}
+.report-header { text-align: center; margin-bottom: 24px; }
+.report-header h2 { font-size: 20px; font-weight: 700; color: var(--blue-dark); }
+.report-header p { font-size: 13px; color: var(--gray); margin-top: 4px; }
+.report-section { margin-bottom: 18px; }
+.report-section h3 { font-size: 14px; font-weight: 700; color: var(--blue-dark); border-bottom: 2px solid var(--blue-light); padding-bottom: 6px; margin-bottom: 10px; }
+.report-grid { display: grid; grid-template-columns: 140px 1fr; gap: 6px 12px; font-size: 13px; }
+.report-grid .rk { color: var(--gray); font-weight: 500; }
+.report-grid .rv { color: var(--text); }
+.guarantee-box {
+  background: var(--blue-light);
+  border: 2px solid var(--blue);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.guarantee-box .g-icon { font-size: 32px; }
+.guarantee-box .g-text h4 { font-size: 15px; font-weight: 700; color: var(--blue-dark); }
+.guarantee-box .g-text p { font-size: 12px; color: var(--gray); margin-top: 3px; }
+.cleaning-notice {
+  background: #fff8e1;
+  border: 1px solid #ffd54f;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+footer { margin-left: var(--sidebar-w); text-align: center; padding: 16px; font-size: 12px; color: var(--gray); background: #fff; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — 優電堂様向け 業務管理システム イメージ（業務改善舎 ケンイチ 作成）</div>
+
+<div class="layout">
+  <!-- サイドバー -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="company">⚡ 優電堂</div>
+      <div class="sub">エアコン取付専門 業務管理</div>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> ダッシュボード
+      </div>
+      <div class="menu-item" onclick="showPage('customers', this)">
+        <span class="icon">👥</span> 顧客管理
+      </div>
+      <div class="menu-item" onclick="showPage('quote', this)">
+        <span class="icon">📋</span> 見積書
+      </div>
+      <div class="menu-item" onclick="showPage('report', this)">
+        <span class="icon">📄</span> 施工完了報告書
+      </div>
+    </div>
+    <div class="sidebar-footer">業務改善舎 ケンイチ</div>
+  </nav>
+
+  <!-- メイン -->
+  <main class="main">
+
+    <!-- ダッシュボード -->
+    <div id="dashboard" class="page active">
+      <div class="page-title">📊 ダッシュボード</div>
+      <div class="kpi-grid">
+        <div class="kpi-card warn">
+          <div class="kpi-label">今季クリーニング案内待ち</div>
+          <div class="kpi-value">14<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">取付1年経過 → 案内対象</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">今月取付件数</div>
+          <div class="kpi-value">23<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">前月比 +3件</div>
+        </div>
+        <div class="kpi-card warn">
+          <div class="kpi-label">3年保証期限間近</div>
+          <div class="kpi-value">6<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">6ヶ月以内に期限切れ</div>
+        </div>
+        <div class="kpi-card ok">
+          <div class="kpi-label">管理中顧客数</div>
+          <div class="kpi-value">312<span class="kpi-unit">名</span></div>
+          <div class="kpi-sub">埼玉・群馬・千葉</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">🔔 クリーニング案内アクション一覧</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>市区町村</th><th>取付日</th><th>機種</th><th>台数</th><th>案内状況</th></tr></thead>
+          <tbody>
+            <tr><td>田中 義雄</td><td>さいたま市浦和区</td><td>2024-04-12</td><td>6畳用（一般）</td><td>2台</td><td><span class="badge badge-orange">未案内</span></td></tr>
+            <tr><td>鈴木 美智子</td><td>上尾市</td><td>2024-04-25</td><td>8畳用（一般）</td><td>1台</td><td><span class="badge badge-orange">未案内</span></td></tr>
+            <tr><td>山本 建設</td><td>熊谷市</td><td>2024-03-08</td><td>業務用</td><td>3台</td><td><span class="badge badge-blue">連絡済</span></td></tr>
+            <tr><td>佐藤 龍一</td><td>所沢市</td><td>2024-03-20</td><td>12畳用（一般）</td><td>2台</td><td><span class="badge badge-orange">未案内</span></td></tr>
+            <tr><td>高橋 商店</td><td>越谷市</td><td>2024-02-14</td><td>業務用</td><td>4台</td><td><span class="badge badge-green">予約確定</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📍 直近施工予定</div>
+        <table>
+          <thead><tr><th>日付</th><th>顧客名</th><th>市区町村</th><th>工事内容</th><th>担当</th><th>ステータス</th></tr></thead>
+          <tbody>
+            <tr><td>2026-05-08</td><td>中村 浩二</td><td>群馬県高崎市</td><td>新規取付 8畳×2台</td><td>田村</td><td><span class="badge badge-blue">確定</span></td></tr>
+            <tr><td>2026-05-09</td><td>伊藤 不動産</td><td>さいたま市大宮区</td><td>移設 2台</td><td>高橋</td><td><span class="badge badge-blue">確定</span></td></tr>
+            <tr><td>2026-05-10</td><td>松本 典子</td><td>千葉県松戸市</td><td>取外し+新規 12畳×1台</td><td>田村</td><td><span class="badge badge-gray">仮予約</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 顧客管理 -->
+    <div id="customers" class="page">
+      <div class="page-title">👥 顧客管理</div>
+      <div class="section">
+        <div class="section-title">🏠 顧客一覧（取付・クリーニングフォロー）</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>エリア</th><th>取付日</th><th>機種・台数</th><th>次回クリーニング</th><th>3年保証期限</th><th>フォロー状況</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>田中 義雄</strong></td>
+              <td>さいたま市浦和区</td>
+              <td>2024-04-12</td>
+              <td>6畳用 × 2台</td>
+              <td>2025-04-12</td>
+              <td>2027-04-12</td>
+              <td><span class="badge badge-orange">未案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>鈴木 美智子</strong></td>
+              <td>上尾市</td>
+              <td>2024-04-25</td>
+              <td>8畳用 × 1台</td>
+              <td>2025-04-25</td>
+              <td>2027-04-25</td>
+              <td><span class="badge badge-orange">未案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>山本 建設（法人）</strong></td>
+              <td>熊谷市</td>
+              <td>2024-03-08</td>
+              <td>業務用 × 3台</td>
+              <td>2025-03-08</td>
+              <td>2027-03-08</td>
+              <td><span class="badge badge-blue">連絡済</span></td>
+            </tr>
+            <tr>
+              <td><strong>佐藤 龍一</strong></td>
+              <td>所沢市</td>
+              <td>2024-03-20</td>
+              <td>12畳用 × 2台</td>
+              <td>2025-03-20</td>
+              <td>2027-03-20</td>
+              <td><span class="badge badge-orange">未案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>高橋 商店（法人）</strong></td>
+              <td>越谷市</td>
+              <td>2024-02-14</td>
+              <td>業務用 × 4台</td>
+              <td>2025-02-14</td>
+              <td>2027-02-14</td>
+              <td><span class="badge badge-green">予約確定</span></td>
+            </tr>
+            <tr>
+              <td><strong>中村 浩二</strong></td>
+              <td>群馬県高崎市</td>
+              <td>2025-01-15</td>
+              <td>8畳用 × 2台</td>
+              <td>2026-01-15</td>
+              <td>2028-01-15</td>
+              <td><span class="badge badge-gray">案内待ち</span></td>
+            </tr>
+            <tr>
+              <td><strong>伊藤 不動産（法人）</strong></td>
+              <td>さいたま市大宮区</td>
+              <td>2023-09-05</td>
+              <td>業務用 × 6台</td>
+              <td>2024-09-05</td>
+              <td>2026-09-05</td>
+              <td><span class="badge badge-red">保証期限注意</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="section">
+        <div class="section-title">💡 クリーニングリピートの流れ</div>
+        <p style="font-size:13px;color:#555;line-height:1.8;">
+          取付から1年後を目安にエアコンクリーニング（9,000円〜）をご案内。<br>
+          このシステムで「未案内→連絡済→予約確定→完了」の状態を管理し、リピート売上を漏れなく回収します。
+        </p>
+      </div>
+    </div>
+
+    <!-- 見積書 -->
+    <div id="quote" class="page">
+      <div class="page-title">📋 見積書作成</div>
+      <div class="section">
+        <div class="section-title">⚙️ 工事内容を選択</div>
+        <div class="quote-form">
+          <div class="form-row">
+            <div class="form-group">
+              <label>工事種別</label>
+              <select id="q-type" onchange="calcQuote()">
+                <option value="install_home">新規取付（一般家庭用）</option>
+                <option value="install_biz">新規取付（業務用）</option>
+                <option value="remove">取外し</option>
+                <option value="move">移設（取外し＋取付）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>機種サイズ</label>
+              <select id="q-size" onchange="calcQuote()">
+                <option value="6">6畳用</option>
+                <option value="8">8畳用</option>
+                <option value="12">12畳用</option>
+                <option value="14">14畳用</option>
+                <option value="20">20畳以上（大型）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>設置階数</label>
+              <select id="q-floor" onchange="calcQuote()">
+                <option value="1">1階（標準）</option>
+                <option value="2">2階（追加料金あり）</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>台数</label>
+              <input type="number" id="q-count" value="1" min="1" max="20" onchange="calcQuote()">
+            </div>
+            <div class="form-group">
+              <label>配管延長追加（m）</label>
+              <select id="q-pipe" onchange="calcQuote()">
+                <option value="0">なし（標準内）</option>
+                <option value="1">+1m</option>
+                <option value="2">+2m</option>
+                <option value="3">+3m以上</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>エアコン処分（古い機種）</label>
+              <select id="q-dispose" onchange="calcQuote()">
+                <option value="0">なし</option>
+                <option value="1">あり（家庭用1台）</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="result-box" id="q-result">
+          <div id="q-breakdown"></div>
+          <div style="border-top:2px solid var(--blue);margin:10px 0;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--blue-dark);">お見積り合計（税込）</span>
+            <span class="total" id="q-total">9,900円</span>
+          </div>
+          <div style="font-size:11px;color:var(--gray);margin-top:6px;">※3年工事保証付き / 標準工事の範囲内の価格です</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】見積書を印刷・PDF保存する機能のイメージです')">🖨️ 見積書を印刷・PDF</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客に見積書をメール送信する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 報告書 -->
+    <div id="report" class="page">
+      <div class="page-title">📄 施工完了報告書</div>
+      <div class="section">
+        <div class="report-preview">
+          <div class="report-header">
+            <h2>⚡ エアコン施工完了報告書</h2>
+            <p>発行：優電堂 | 発行日：2026年5月6日</p>
+          </div>
+          <div class="report-section">
+            <h3>お客様情報</h3>
+            <div class="report-grid">
+              <span class="rk">お客様名</span><span class="rv">田中 義雄 様</span>
+              <span class="rk">住所</span><span class="rv">埼玉県さいたま市浦和区〇〇 1-2-3</span>
+              <span class="rk">TEL</span><span class="rv">048-XXX-XXXX</span>
+              <span class="rk">施工日</span><span class="rv">2026年5月6日（火）</span>
+              <span class="rk">担当スタッフ</span><span class="rv">田村 一郎</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>施工内容</h3>
+            <div class="report-grid">
+              <span class="rk">工事種別</span><span class="rv">新規取付（一般家庭用）</span>
+              <span class="rk">機種サイズ</span><span class="rv">6畳用 × 2台</span>
+              <span class="rk">設置箇所</span><span class="rv">リビング・寝室（2階）</span>
+              <span class="rk">配管延長</span><span class="rv">標準範囲内</span>
+              <span class="rk">作業時間</span><span class="rv">10:00 〜 13:30</span>
+              <span class="rk">施工金額</span><span class="rv">21,780円（税込）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>保証について</h3>
+            <div class="guarantee-box">
+              <div class="g-icon">🛡️</div>
+              <div class="g-text">
+                <h4>工事3年保証 付き</h4>
+                <p>施工日より3年間、工事に起因する不具合は無償対応いたします。<br>保証期限：2029年5月6日まで</p>
+              </div>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>次回おすすめのご案内</h3>
+            <div class="cleaning-notice">
+              ❄️ <strong>エアコンクリーニング案内</strong>（次回案内予定：2027年5月頃）<br>
+              エアコン取付から1年後を目安に、内部クリーニングをおすすめしています。<br>
+              料金：9,000円〜（機種により異なります）<br>
+              <span style="color:#888;font-size:11px;">ご希望の際はお気軽にお問い合わせください</span>
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--gray);margin-top:16px;">
+            優電堂 / TEL: 0570-XXX-XXX / 埼玉全域・群馬・千葉対応
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】施工完了報告書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF保存</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>業務改善舎 ケンイチ 制作 | デモ画面のため実際の業務には使用できません</footer>
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+const prices = {
+  install_home: { base: 9000, label: '新規取付（一般家庭用）基本料' },
+  install_biz:  { base: 18000, label: '新規取付（業務用）基本料' },
+  remove:       { base: 5000, label: '取外し基本料' },
+  move:         { base: 14000, label: '移設（取外し＋取付）基本料' },
+};
+const sizeAdd = { '6': 0, '8': 1000, '12': 3000, '14': 5000, '20': 10000 };
+const sizeLabel = { '6':'6畳用', '8':'8畳用', '12':'12畳用', '14':'14畳用', '20':'20畳以上' };
+const floorAdd = { '1': 0, '2': 3000 };
+const pipeAdd = [0, 1500, 3000, 5000];
+const disposeAdd = [0, 3300];
+
+function calcQuote() {
+  const type = document.getElementById('q-type').value;
+  const size = document.getElementById('q-size').value;
+  const floor = document.getElementById('q-floor').value;
+  const count = parseInt(document.getElementById('q-count').value) || 1;
+  const pipe = parseInt(document.getElementById('q-pipe').value) || 0;
+  const dispose = parseInt(document.getElementById('q-dispose').value) || 0;
+
+  const p = prices[type];
+  const unitBase = p.base + sizeAdd[size] + floorAdd[floor];
+  const unitTotal = unitBase + pipeAdd[pipe] + disposeAdd[dispose];
+  const total = unitTotal * count;
+  const tax = Math.round(total * 0.1);
+  const totalWithTax = total + tax;
+
+  let html = '';
+  html += `<div class="result-line"><span class="label">${p.label}（${sizeLabel[size]}）</span><span>${p.base.toLocaleString()}円</span></div>`;
+  if (sizeAdd[size]) html += `<div class="result-line"><span class="label">サイズ追加（${sizeLabel[size]}）</span><span>+${sizeAdd[size].toLocaleString()}円</span></div>`;
+  if (floorAdd[floor]) html += `<div class="result-line"><span class="label">2階設置追加</span><span>+${floorAdd[floor].toLocaleString()}円</span></div>`;
+  if (pipeAdd[pipe]) html += `<div class="result-line"><span class="label">配管延長追加</span><span>+${pipeAdd[pipe].toLocaleString()}円</span></div>`;
+  if (disposeAdd[dispose]) html += `<div class="result-line"><span class="label">エアコン処分</span><span>+${disposeAdd[dispose].toLocaleString()}円</span></div>`;
+  if (count > 1) html += `<div class="result-line"><span class="label">× ${count}台</span><span>= ${total.toLocaleString()}円（税抜）</span></div>`;
+  html += `<div class="result-line"><span class="label">消費税（10%）</span><span>${tax.toLocaleString()}円</span></div>`;
+
+  document.getElementById('q-breakdown').innerHTML = html;
+  document.getElementById('q-total').textContent = totalWithTax.toLocaleString() + '円';
+}
+
+calcQuote();
+</script>
+</body>
+</html>

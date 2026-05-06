@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>株式会社桐花 — 業務管理システム デモ</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --warm: #c85000;
+  --warm-dark: #a03a00;
+  --warm-light: #fff3ed;
+  --blue: #1565c0;
+  --blue-light: #e3f0fb;
+  --white: #ffffff;
+  --gray: #666;
+  --gray-bg: #faf7f4;
+  --text: #222;
+  --border: #e8d8cc;
+  --sidebar-w: 220px;
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Noto Sans JP', sans-serif; background: var(--gray-bg); color: var(--text); min-height: 100vh; }
+
+.demo-bar {
+  background: #3a1a00;
+  color: #fff;
+  text-align: center;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-weight: 700;
+  position: sticky; top: 0; z-index: 100;
+}
+
+.layout { display: flex; min-height: calc(100vh - 38px); }
+
+.sidebar {
+  width: var(--sidebar-w);
+  background: var(--warm);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  position: fixed;
+  top: 38px; left: 0;
+  height: calc(100vh - 38px);
+  overflow-y: auto;
+}
+.sidebar-logo {
+  padding: 24px 20px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.2);
+}
+.sidebar-logo .company { font-size: 17px; font-weight: 700; }
+.sidebar-logo .sub { font-size: 11px; opacity: 0.8; margin-top: 4px; }
+.sidebar-menu { padding: 12px 0; flex: 1; }
+.menu-item {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 20px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+  border-left: 3px solid transparent;
+}
+.menu-item:hover { background: rgba(255,255,255,0.1); }
+.menu-item.active { background: var(--warm-dark); border-left-color: #ffd0a0; font-weight: 700; }
+.menu-item .icon { font-size: 18px; width: 22px; text-align: center; }
+.sidebar-footer { padding: 16px 20px; font-size: 11px; opacity: 0.7; border-top: 1px solid rgba(255,255,255,0.2); }
+
+.main { margin-left: var(--sidebar-w); padding: 28px 32px; flex: 1; }
+.page { display: none; }
+.page.active { display: block; }
+.page-title { font-size: 22px; font-weight: 700; color: var(--warm-dark); margin-bottom: 20px; }
+
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 28px; }
+.kpi-card {
+  background: #fff;
+  border-radius: 10px;
+  padding: 20px;
+  box-shadow: 0 1px 4px rgba(200,80,0,0.1);
+  border-top: 4px solid var(--warm);
+}
+.kpi-card.blue { border-top-color: var(--blue); }
+.kpi-card.green { border-top-color: #22c55e; }
+.kpi-card.gray { border-top-color: #aaa; }
+.kpi-label { font-size: 12px; color: var(--gray); font-weight: 500; margin-bottom: 8px; }
+.kpi-value { font-size: 32px; font-weight: 700; color: var(--text); }
+.kpi-unit { font-size: 14px; font-weight: 400; margin-left: 4px; color: var(--gray); }
+.kpi-sub { font-size: 11px; color: var(--gray); margin-top: 6px; }
+
+.section { background: #fff; border-radius: 10px; padding: 20px 24px; margin-bottom: 20px; box-shadow: 0 1px 4px rgba(200,80,0,0.07); }
+.section-title { font-size: 15px; font-weight: 700; color: var(--warm-dark); margin-bottom: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: var(--warm-light); color: var(--warm-dark); font-weight: 700; padding: 10px 12px; text-align: left; }
+td { padding: 10px 12px; border-bottom: 1px solid #f0e8e0; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: var(--warm-light); }
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.badge-warm { background: var(--warm-light); color: var(--warm-dark); }
+.badge-blue { background: var(--blue-light); color: var(--blue); }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+.badge-orange { background: #fff3e0; color: #e65100; }
+.badge-red { background: #fce4ec; color: #b71c1c; }
+.badge-gray { background: #f5f5f5; color: #555; }
+
+/* タイムライン */
+.timeline { position: relative; padding-left: 24px; }
+.timeline::before { content:''; position:absolute; left:8px; top:0; bottom:0; width:2px; background:var(--border); }
+.timeline-item { position:relative; margin-bottom:18px; }
+.timeline-item::before { content:''; position:absolute; left:-20px; top:4px; width:10px; height:10px; border-radius:50%; background:var(--warm); border:2px solid #fff; }
+.timeline-item .tl-date { font-size:11px; color:var(--gray); margin-bottom:2px; }
+.timeline-item .tl-content { font-size:13px; color:var(--text); }
+
+/* 見積 */
+.form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 14px; }
+.form-group label { font-size: 12px; font-weight: 700; color: var(--gray); display: block; margin-bottom: 6px; }
+.form-group select, .form-group input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--border);
+  border-radius: 6px; font-size: 14px; font-family: inherit; color: var(--text); background: #fff;
+}
+.form-group select:focus, .form-group input:focus {
+  outline: none; border-color: var(--warm); box-shadow: 0 0 0 3px rgba(200,80,0,0.12);
+}
+.result-box {
+  background: var(--warm-light);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 24px;
+  margin-top: 8px;
+}
+.result-line { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
+.result-line .label { color: var(--gray); }
+.total { font-size: 28px; font-weight: 700; color: var(--warm-dark); }
+.btn {
+  background: var(--warm);
+  color: #fff;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 28px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.15s;
+}
+.btn:hover { background: var(--warm-dark); }
+.btn-outline { background: #fff; color: var(--warm); border: 2px solid var(--warm); }
+.btn-outline:hover { background: var(--warm-light); }
+
+/* 買い替えタイマー */
+.timer-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 18px; }
+.timer-card {
+  border-radius: 8px;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  background: #fff;
+}
+.timer-card.danger { border-color: #f56020; background: #fff8f5; }
+.timer-card.soon { border-color: #ffc107; background: #fffdf0; }
+.timer-label { font-size: 11px; color: var(--gray); margin-bottom: 4px; }
+.timer-name { font-size: 14px; font-weight: 700; margin-bottom: 4px; }
+.timer-product { font-size: 12px; color: var(--gray); margin-bottom: 8px; }
+.timer-bar { height: 8px; background: #eee; border-radius: 4px; }
+.timer-bar-fill { height: 8px; border-radius: 4px; }
+.timer-bar-fill.danger { background: #f56020; }
+.timer-bar-fill.soon { background: #ffc107; }
+.timer-bar-fill.ok { background: #22c55e; }
+.timer-years { font-size: 11px; color: var(--gray); margin-top: 4px; text-align: right; }
+
+.report-preview { border: 1px solid var(--border); border-radius: 8px; padding: 28px 32px; background: #fff; max-width: 700px; }
+.report-header { text-align: center; margin-bottom: 24px; }
+.report-header h2 { font-size: 20px; font-weight: 700; color: var(--warm-dark); }
+.report-header p { font-size: 13px; color: var(--gray); margin-top: 4px; }
+.report-section { margin-bottom: 18px; }
+.report-section h3 { font-size: 14px; font-weight: 700; color: var(--warm-dark); border-bottom: 2px solid var(--warm-light); padding-bottom: 6px; margin-bottom: 10px; }
+.report-grid { display: grid; grid-template-columns: 150px 1fr; gap: 6px 12px; font-size: 13px; }
+.report-grid .rk { color: var(--gray); font-weight: 500; }
+.warranty-box {
+  background: var(--blue-light);
+  border: 1.5px solid var(--blue);
+  border-radius: 8px;
+  padding: 14px 18px;
+  display: flex; align-items: center; gap: 14px;
+}
+.warranty-box .w-icon { font-size: 32px; }
+.warranty-box .w-text h4 { font-size: 15px; font-weight: 700; color: var(--blue); }
+.warranty-box .w-text p { font-size: 12px; color: var(--gray); margin-top: 3px; }
+.replace-notice {
+  background: var(--warm-light);
+  border: 1px solid #f0c090;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 13px;
+  margin-top: 12px;
+}
+footer { margin-left: var(--sidebar-w); text-align: center; padding: 16px; font-size: 12px; color: var(--gray); background: #fff; border-top: 1px solid var(--border); }
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ デモ画面 — 株式会社桐花様向け 業務管理システム イメージ（業務改善舎 ケンイチ 作成）</div>
+
+<div class="layout">
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="company">🔥 株式会社桐花</div>
+      <div class="sub">給湯器・設備工事 業務管理</div>
+    </div>
+    <div class="sidebar-menu">
+      <div class="menu-item active" onclick="showPage('dashboard', this)">
+        <span class="icon">📊</span> ダッシュボード
+      </div>
+      <div class="menu-item" onclick="showPage('customers', this)">
+        <span class="icon">👥</span> 顧客管理
+      </div>
+      <div class="menu-item" onclick="showPage('quote', this)">
+        <span class="icon">📋</span> 見積書
+      </div>
+      <div class="menu-item" onclick="showPage('report', this)">
+        <span class="icon">📄</span> 施工完了報告書
+      </div>
+    </div>
+    <div class="sidebar-footer">業務改善舎 ケンイチ</div>
+  </nav>
+
+  <main class="main">
+
+    <!-- ダッシュボード -->
+    <div id="dashboard" class="page active">
+      <div class="page-title">📊 ダッシュボード</div>
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">買い替えフォロー対象</div>
+          <div class="kpi-value">11<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">設置10年以上 → 案内対象</div>
+        </div>
+        <div class="kpi-card blue">
+          <div class="kpi-label">今月施工件数</div>
+          <div class="kpi-value">19<span class="kpi-unit">件</span></div>
+          <div class="kpi-sub">給湯器14件 / 設備5件</div>
+        </div>
+        <div class="kpi-card green">
+          <div class="kpi-label">今月売上（概算）</div>
+          <div class="kpi-value">285<span class="kpi-unit">万円</span></div>
+          <div class="kpi-sub">平均単価 15万円</div>
+        </div>
+        <div class="kpi-card gray">
+          <div class="kpi-label">管理中顧客数</div>
+          <div class="kpi-value">218<span class="kpi-unit">名</span></div>
+          <div class="kpi-sub">川越市・川口市を中心に埼玉全域</div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">⏰ 買い替え時期アラート — 設置から10年以上経過</div>
+        <div class="timer-grid">
+          <div class="timer-card danger">
+            <div class="timer-label">⚠️ 至急フォロー</div>
+            <div class="timer-name">高橋 義雄 様</div>
+            <div class="timer-product">ガス給湯器 20号 / 2013年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill danger" style="width:93%"></div></div>
+            <div class="timer-years">設置13年経過 — 故障リスク高</div>
+          </div>
+          <div class="timer-card danger">
+            <div class="timer-label">⚠️ 至急フォロー</div>
+            <div class="timer-name">山口 裕子 様</div>
+            <div class="timer-product">エコキュート 370L / 2014年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill danger" style="width:85%"></div></div>
+            <div class="timer-years">設置12年経過 — 推奨交換時期</div>
+          </div>
+          <div class="timer-card soon">
+            <div class="timer-label">📋 案内準備</div>
+            <div class="timer-name">池田 健太郎 様</div>
+            <div class="timer-product">ガス給湯器 24号 / 2016年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill soon" style="width:70%"></div></div>
+            <div class="timer-years">設置10年経過 — 案内推奨</div>
+          </div>
+          <div class="timer-card soon">
+            <div class="timer-label">📋 案内準備</div>
+            <div class="timer-name">中島 商事（法人）</div>
+            <div class="timer-product">業務用給湯器 / 2015年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill soon" style="width:75%"></div></div>
+            <div class="timer-years">設置11年経過</div>
+          </div>
+          <div class="timer-card">
+            <div class="timer-label">📝 引き続き管理</div>
+            <div class="timer-name">鈴木 幸子 様</div>
+            <div class="timer-product">エコキュート 460L / 2018年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill ok" style="width:55%"></div></div>
+            <div class="timer-years">設置8年経過 — あと4〜6年</div>
+          </div>
+          <div class="timer-card">
+            <div class="timer-label">📝 引き続き管理</div>
+            <div class="timer-name">田中 和也 様</div>
+            <div class="timer-product">太陽熱温水器 / 2019年設置</div>
+            <div class="timer-bar"><div class="timer-bar-fill ok" style="width:45%"></div></div>
+            <div class="timer-years">設置7年経過 — あと5〜8年</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">📅 直近の施工予定</div>
+        <table>
+          <thead><tr><th>日付</th><th>顧客名</th><th>エリア</th><th>工事内容</th><th>金額（概算）</th><th>ステータス</th></tr></thead>
+          <tbody>
+            <tr><td>2026-05-07</td><td>渡辺 典子</td><td>川越市</td><td>ガス給湯器 16号 交換</td><td>18万円</td><td><span class="badge badge-blue">確定</span></td></tr>
+            <tr><td>2026-05-08</td><td>大野 建設（法人）</td><td>川口市</td><td>業務用給湯器 交換</td><td>45万円</td><td><span class="badge badge-blue">確定</span></td></tr>
+            <tr><td>2026-05-09</td><td>小林 洋子</td><td>さいたま市</td><td>エコキュート 370L 新設</td><td>32万円</td><td><span class="badge badge-gray">仮予約</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 顧客管理 -->
+    <div id="customers" class="page">
+      <div class="page-title">👥 顧客管理 — 買い替えフォロー</div>
+      <div class="section">
+        <div class="section-title">🔥 給湯器・設備 管理台帳</div>
+        <table>
+          <thead><tr><th>顧客名</th><th>エリア</th><th>製品種別</th><th>設置年</th><th>推奨買替時期</th><th>見積金額（目安）</th><th>フォロー状況</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><strong>高橋 義雄</strong></td>
+              <td>川越市</td>
+              <td>ガス給湯器 20号</td>
+              <td>2013年</td>
+              <td>2023〜2025年（超過）</td>
+              <td>15〜20万円</td>
+              <td><span class="badge badge-red">至急案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>山口 裕子</strong></td>
+              <td>川口市</td>
+              <td>エコキュート 370L</td>
+              <td>2014年</td>
+              <td>2024〜2026年</td>
+              <td>25〜35万円</td>
+              <td><span class="badge badge-red">至急案内</span></td>
+            </tr>
+            <tr>
+              <td><strong>池田 健太郎</strong></td>
+              <td>川越市</td>
+              <td>ガス給湯器 24号</td>
+              <td>2016年</td>
+              <td>2026〜2028年</td>
+              <td>18〜25万円</td>
+              <td><span class="badge badge-orange">案内済</span></td>
+            </tr>
+            <tr>
+              <td><strong>中島 商事（法人）</strong></td>
+              <td>川越市</td>
+              <td>業務用給湯器</td>
+              <td>2015年</td>
+              <td>2025〜2027年</td>
+              <td>35〜60万円</td>
+              <td><span class="badge badge-orange">連絡済</span></td>
+            </tr>
+            <tr>
+              <td><strong>鈴木 幸子</strong></td>
+              <td>さいたま市</td>
+              <td>エコキュート 460L</td>
+              <td>2018年</td>
+              <td>2028〜2030年</td>
+              <td>30〜42万円</td>
+              <td><span class="badge badge-green">管理中</span></td>
+            </tr>
+            <tr>
+              <td><strong>田中 和也</strong></td>
+              <td>川口市</td>
+              <td>太陽熱温水器</td>
+              <td>2019年</td>
+              <td>2029〜2034年</td>
+              <td>20〜40万円</td>
+              <td><span class="badge badge-green">管理中</span></td>
+            </tr>
+            <tr>
+              <td><strong>渡辺 典子</strong></td>
+              <td>川越市</td>
+              <td>ガス給湯器 16号</td>
+              <td>2009年</td>
+              <td>2019〜2021年（超過）</td>
+              <td>15〜22万円</td>
+              <td><span class="badge badge-blue">交換予定</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="section">
+        <div class="section-title">💡 買い替えフォローの目安</div>
+        <table>
+          <thead><tr><th>製品種別</th><th>一般的な寿命</th><th>買い替え推奨時期</th><th>概算費用（工事込み）</th></tr></thead>
+          <tbody>
+            <tr><td>ガス給湯器（家庭用）</td><td>10〜15年</td><td>10年経過から案内</td><td>10〜25万円</td></tr>
+            <tr><td>エコキュート</td><td>10〜12年</td><td>10年経過から案内</td><td>25〜45万円</td></tr>
+            <tr><td>電気温水器</td><td>10〜15年</td><td>10年経過から案内</td><td>15〜35万円</td></tr>
+            <tr><td>太陽熱温水器</td><td>15〜20年</td><td>15年経過から案内</td><td>20〜50万円</td></tr>
+            <tr><td>業務用給湯器</td><td>10〜15年</td><td>10年経過から案内</td><td>30〜100万円</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- 見積書 -->
+    <div id="quote" class="page">
+      <div class="page-title">📋 見積書作成</div>
+      <div class="section">
+        <div class="section-title">⚙️ 製品・工事内容を選択</div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>製品種別</label>
+            <select id="q-type" onchange="calcQuote()">
+              <option value="gas_16">ガス給湯器 16号</option>
+              <option value="gas_20">ガス給湯器 20号</option>
+              <option value="gas_24">ガス給湯器 24号</option>
+              <option value="eco_370">エコキュート 370L</option>
+              <option value="eco_460">エコキュート 460L</option>
+              <option value="electric">電気温水器</option>
+              <option value="solar">太陽熱温水器</option>
+              <option value="biz">業務用給湯器</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>工事種別</label>
+            <select id="q-work" onchange="calcQuote()">
+              <option value="replace">既存機器の交換</option>
+              <option value="new">新規設置</option>
+              <option value="remove">撤去のみ</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>台数</label>
+            <input type="number" id="q-count" value="1" min="1" max="10" onchange="calcQuote()">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>配管工事</label>
+            <select id="q-pipe" onchange="calcQuote()">
+              <option value="0">既存流用（標準）</option>
+              <option value="15000">一部交換（+1.5万円）</option>
+              <option value="30000">全交換（+3万円）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>電気工事</label>
+            <select id="q-elec" onchange="calcQuote()">
+              <option value="0">不要</option>
+              <option value="15000">コンセント追加（+1.5万円）</option>
+              <option value="30000">200V工事（+3万円）</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>古い機器の処分</label>
+            <select id="q-dispose" onchange="calcQuote()">
+              <option value="0">なし（自己処分）</option>
+              <option value="8800">あり（+8,800円）</option>
+            </select>
+          </div>
+        </div>
+        <div class="result-box">
+          <div id="q-breakdown"></div>
+          <div style="border-top:2px solid var(--warm);margin:10px 0;"></div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-weight:700;color:var(--warm-dark);">お見積り合計（税込）</span>
+            <span class="total" id="q-total">—</span>
+          </div>
+          <div style="font-size:11px;color:var(--gray);margin-top:6px;">※現地確認後に正式お見積り / メーカー・機種により変動あり</div>
+        </div>
+        <div style="margin-top:14px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】見積書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 報告書 -->
+    <div id="report" class="page">
+      <div class="page-title">📄 施工完了報告書</div>
+      <div class="section">
+        <div class="report-preview">
+          <div class="report-header">
+            <h2>🔥 給湯器交換 施工完了報告書</h2>
+            <p>株式会社桐花 | 発行日：2026年5月6日</p>
+          </div>
+          <div class="report-section">
+            <h3>お客様情報</h3>
+            <div class="report-grid">
+              <span class="rk">お客様名</span><span class="rv">渡辺 典子 様</span>
+              <span class="rk">住所</span><span class="rv">埼玉県川越市〇〇 4-2-1</span>
+              <span class="rk">TEL</span><span class="rv">049-XXX-XXXX</span>
+              <span class="rk">施工日</span><span class="rv">2026年5月7日（水）</span>
+              <span class="rk">担当スタッフ</span><span class="rv">桐島 誠（施工責任者）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>施工内容</h3>
+            <div class="report-grid">
+              <span class="rk">工事種別</span><span class="rv">既存給湯器 撤去・交換</span>
+              <span class="rk">撤去機器</span><span class="rv">ガス給湯器 16号（設置17年）</span>
+              <span class="rk">新設機器</span><span class="rv">ガス給湯器 16号（省エネ型）</span>
+              <span class="rk">メーカー</span><span class="rv">リンナイ RUF-A1615AW</span>
+              <span class="rk">付帯工事</span><span class="rv">ガス配管点検・接続確認・試運転</span>
+              <span class="rk">施工金額</span><span class="rv">176,000円（税込）</span>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>保証について</h3>
+            <div class="warranty-box">
+              <div class="w-icon">🛡️</div>
+              <div class="w-text">
+                <h4>機器メーカー保証 5年 ＋ 工事保証 1年</h4>
+                <p>機器保証期限：2031年5月7日まで<br>工事保証期限：2027年5月7日まで<br>異常があればすぐにご連絡ください</p>
+              </div>
+            </div>
+          </div>
+          <div class="report-section">
+            <h3>次回のお知らせ</h3>
+            <div class="replace-notice">
+              🔔 <strong>次回買い替え目安：2036〜2041年頃</strong><br>
+              給湯器は10〜15年が交換の目安です。時期が近づいたら桐花よりご連絡いたします。<br>
+              <strong>エコキュート・太陽熱温水器・設備工事</strong>もお気軽にご相談ください。<br>
+              <span style="font-size:11px;color:#888;">埼玉全域（川越・川口を中心に）対応</span>
+            </div>
+          </div>
+          <div style="text-align:right;font-size:12px;color:var(--gray);margin-top:16px;">
+            株式会社桐花 | TEL: 049-XXX-XXXX | 埼玉県全域対応
+          </div>
+        </div>
+        <div style="margin-top:16px;display:flex;gap:10px;">
+          <button class="btn" onclick="alert('【デモ】報告書を印刷・PDF保存する機能のイメージです')">🖨️ 印刷・PDF保存</button>
+          <button class="btn btn-outline" onclick="alert('【デモ】顧客にメール送付する機能のイメージです')">📧 メール送付</button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<footer>業務改善舎 ケンイチ 制作 | デモ画面のため実際の業務には使用できません</footer>
+
+<script>
+function showPage(id, el) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.menu-item').forEach(m => m.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  el.classList.add('active');
+}
+
+const productPrices = {
+  gas_16:   { label: 'ガス給湯器 16号', price: 120000 },
+  gas_20:   { label: 'ガス給湯器 20号', price: 150000 },
+  gas_24:   { label: 'ガス給湯器 24号', price: 180000 },
+  eco_370:  { label: 'エコキュート 370L', price: 280000 },
+  eco_460:  { label: 'エコキュート 460L', price: 320000 },
+  electric: { label: '電気温水器', price: 200000 },
+  solar:    { label: '太陽熱温水器', price: 250000 },
+  biz:      { label: '業務用給湯器', price: 400000 },
+};
+const workAdd = { replace: 0, new: 30000, remove: -50000 };
+const workLabel = { replace: '交換工事（既存撤去込み）', new: '新規設置（+3万円）', remove: '撤去のみ（機器費不要）' };
+
+function calcQuote() {
+  const type = document.getElementById('q-type').value;
+  const work = document.getElementById('q-work').value;
+  const count = parseInt(document.getElementById('q-count').value) || 1;
+  const pipe = parseInt(document.getElementById('q-pipe').value) || 0;
+  const elec = parseInt(document.getElementById('q-elec').value) || 0;
+  const dispose = parseInt(document.getElementById('q-dispose').value) || 0;
+
+  const p = productPrices[type];
+  let unitPrice = p.price + workAdd[work];
+  if (unitPrice < 0) unitPrice = 0;
+  const subtotal = unitPrice * count;
+  const extras = pipe + elec + dispose;
+  const total = subtotal + extras;
+  const tax = Math.round(total * 0.1);
+  const totalWithTax = total + tax;
+
+  let html = '';
+  html += `<div class="result-line"><span class="label">${p.label}（機器＋${workLabel[work]}）× ${count}台</span><span>${subtotal.toLocaleString()}円</span></div>`;
+  if (pipe) html += `<div class="result-line"><span class="label">配管工事</span><span>+${pipe.toLocaleString()}円</span></div>`;
+  if (elec) html += `<div class="result-line"><span class="label">電気工事</span><span>+${elec.toLocaleString()}円</span></div>`;
+  if (dispose) html += `<div class="result-line"><span class="label">既存機器 処分費</span><span>+${dispose.toLocaleString()}円</span></div>`;
+  html += `<div class="result-line"><span class="label">消費税（10%）</span><span>${tax.toLocaleString()}円</span></div>`;
+
+  document.getElementById('q-breakdown').innerHTML = html;
+  document.getElementById('q-total').textContent = totalWithTax.toLocaleString() + '円';
+}
+
+calcQuote();
+</script>
+</body>
+</html>
