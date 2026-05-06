@@ -1,0 +1,556 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>街の屋根やさん埼玉上尾店 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --sky:#0099cc;
+  --sky-dark:#0077aa;
+  --sky-light:#e0f5fc;
+  --orange:#f5a500;
+  --orange-light:#fff8e6;
+  --red:#dc2626;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --gray-bg:#f5f8fa;
+  --ink:#1a2535;
+  --gray:#5a6a75;
+  --line:#cde0ea;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#003d55;color:#7dd8f0;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar - sky blue matching HP */
+.sidebar{width:220px;background:var(--sky);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.2)}
+.logo-icon{font-size:24px;margin-bottom:6px}
+.logo-name{font-size:12px;font-weight:700;color:#fff;line-height:1.5}
+.logo-orange{color:var(--orange)}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.5);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;color:rgba(255,255,255,.75);cursor:pointer;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.12);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.2);color:#fff;border-right:3px solid var(--orange)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.15);font-size:10px;color:rgba(255,255,255,.38);line-height:1.7}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--sky-dark)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+.page{display:none}
+.page.active{display:block}
+
+/* KPI */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line);border-top:3px solid var(--sky)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--sky)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi.total .kn{color:var(--sky-dark);font-size:22px}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+
+/* Card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--sky);background:var(--sky)}
+.card-title{font-size:13px;font-weight:700;color:#fff}
+.card-title-orange{color:var(--orange)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.f-sel{border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:5px 9px;font-size:11px;font-family:inherit;background:rgba(255,255,255,.15);color:#fff}
+
+/* Table */
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--sky-light);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--sky-dark);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:var(--sky-light)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-red{background:#fef2f2;color:var(--red)}
+.b-orange{background:var(--orange-light);color:#c07000}
+.b-green{background:var(--green-light);color:var(--green)}
+.b-sky{background:var(--sky-light);color:var(--sky-dark)}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.a-sky{background:var(--sky);color:#fff}
+.a-orange{background:var(--orange);color:#fff}
+.a-green{background:var(--green);color:#fff}
+.a-ghost{background:var(--sky-light);color:var(--sky-dark);border:1px solid var(--line)}
+
+/* Two col */
+.two-col{display:grid;grid-template-columns:380px 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--sky-dark);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--sky)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px}
+.fi,.fs{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--sky)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--sky);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--sky-dark)}
+
+/* Preview */
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:2px solid var(--sky);display:flex;align-items:center;justify-content:space-between;background:var(--sky)}
+.prev-title{font-size:12px;font-weight:700;color:#fff}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px;line-height:2}
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--sky)}
+.doc-company{font-size:14px;font-weight:700;color:var(--sky-dark)}
+.doc-type{font-size:17px;font-weight:700;color:var(--sky-dark);text-align:right}
+.doc-to{background:var(--sky-light);padding:8px 12px;border-radius:4px;margin-bottom:12px;border-left:4px solid var(--sky)}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:11px;background:var(--gray-bg);padding:8px 10px;border-radius:4px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--sky);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--sky-dark);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--orange)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--gray-bg);padding:8px 10px;border-radius:4px;line-height:1.8}
+.check-section{margin-bottom:10px}
+.check-title{font-size:11px;font-weight:700;color:var(--sky-dark);margin-bottom:5px;padding-bottom:3px;border-bottom:1px solid var(--line)}
+.check-items{display:flex;flex-direction:column;gap:3px}
+.check-item{display:flex;align-items:center;gap:6px;font-size:11px}
+.ck{color:var(--green);font-weight:700}
+</style>
+</head>
+<body>
+<div class="demo-bar">⚠️ デモ画面 — 街の屋根やさん埼玉上尾店様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🏠</div>
+      <div class="logo-name"><span class="logo-orange">街の屋根やさん</span><br>埼玉上尾店</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span>ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('customers',this)"><span class="nav-icon">👥</span>顧客・フォロー管理</div>
+      <div class="nav-item" onclick="showPage('estimate',this)"><span class="nav-icon">💴</span>見積書作成</div>
+      <div class="nav-item" onclick="showPage('report',this)"><span class="nav-icon">📄</span>施工完了報告書</div>
+    </nav>
+    <div class="sidebar-footer">
+      街の屋根やさん埼玉上尾店<br>上尾市・桶川市・伊奈町<br>0120-748-158
+    </div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi urgent"><div class="kn">8</div><div class="kl">🔴 点検時期超過（要フォロー）</div></div>
+          <div class="kpi warn"><div class="kn">15</div><div class="kl">🟠 3年以内にフォロー推奨</div></div>
+          <div class="kpi"><div class="kn">3</div><div class="kl">💴 今月の見積提出件数</div></div>
+          <div class="kpi total"><div class="kn">10,000+</div><div class="kl">🏠 累計施工実績</div></div>
+        </div>
+
+        <!-- 保証期限バナー -->
+        <div style="background:linear-gradient(135deg,var(--orange) 0%,#e08000 100%);border-radius:8px;padding:14px 20px;margin-bottom:18px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">🛡️ 最長15年保証の期限管理</div>
+            <div style="font-size:11px;opacity:.85">保証期限が近づいたお客様に自動で通知。更新商談の機会を逃しません。</div>
+          </div>
+          <div style="background:rgba(255,255,255,.2);padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700">今月 保証期限 2件</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔴 <span class="card-title-orange">点検・メンテナンス時期が来ている</span>お客様</span></div>
+          <div style="padding:10px 18px;font-size:11px;color:#c07000;background:var(--orange-light);border-bottom:1px solid var(--line)">
+            💡 屋根の耐久年数は工法により10〜30年。施工から一定期間経過したお客様への点検案内が再施工につながります。
+          </div>
+          <table class="tbl">
+            <thead><tr><th>施主名</th><th>施工場所</th><th>工事内容</th><th>施工年</th><th>経過</th><th>保証期限</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td><div style="font-weight:700">田中 正幸 様</div><div style="font-size:10px;color:var(--gray)">上尾市XX1丁目</div></td><td>一般住宅</td><td>屋根カバー工法</td><td>2013年</td><td><span class="badge b-red">🔴 13年経過</span></td><td style="color:var(--red);font-size:11px;font-weight:700">2028年（5年後）</td><td><div class="act-cell"><button class="act a-sky">📞 電話</button><button class="act a-orange" onclick="loadEstimate('田中 正幸')">💴 見積作成</button></div></td></tr>
+              <tr><td><div style="font-weight:700">鈴木 和夫 様</div><div style="font-size:10px;color:var(--gray)">桶川市XX2丁目</div></td><td>一般住宅</td><td>屋根葺き替え（ガルバリウム）</td><td>2014年</td><td><span class="badge b-red">🔴 12年経過</span></td><td style="font-size:11px">2024年（期限超過）</td><td><div class="act-cell"><button class="act a-sky">📞 電話</button><button class="act a-orange" onclick="loadEstimate('鈴木 和夫')">💴 見積作成</button></div></td></tr>
+              <tr><td><div style="font-weight:700">山本 哲也 様</div><div style="font-size:10px;color:var(--gray)">伊奈町XX3丁目</div></td><td>一般住宅</td><td>屋根塗装工事</td><td>2015年</td><td><span class="badge b-orange">🟠 11年経過</span></td><td style="font-size:11px">2025年（期限間近）</td><td><div class="act-cell"><button class="act a-sky">📞 電話</button><button class="act a-orange" onclick="loadEstimate('山本 哲也')">💴 見積作成</button></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">📋 今月の進行中案件</span></div>
+          <table class="tbl">
+            <thead><tr><th>施主名</th><th>工事内容</th><th>エリア</th><th>状態</th><th>保証年数</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:700">佐藤 建二 様</td><td>屋根カバー工法（ガルバリウム）</td><td>上尾市</td><td><span class="badge b-green">🟢 施工中</span></td><td>15年保証</td><td><button class="act a-sky" onclick="loadReport('佐藤 建二')">📄 完了報告書</button></td></tr>
+              <tr><td style="font-weight:700">高橋 隆 様</td><td>屋根葺き替え＋外壁塗装</td><td>桶川市</td><td><span class="badge b-orange">📋 見積提出済み</span></td><td>10年保証</td><td><button class="act a-sky" onclick="loadReport('高橋 隆')">📄 完了報告書</button></td></tr>
+              <tr><td style="font-weight:700">中村 清美 様</td><td>雨漏り修理＋防水工事</td><td>伊奈町</td><td><span class="badge b-sky">🔵 現地調査済み</span></td><td>5年保証</td><td><button class="act a-sky" onclick="loadReport('中村 清美')">📄 完了報告書</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客・フォロー管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 点検時期超過</option>
+                <option value="warn">🟠 3〜10年（要注意）</option>
+                <option value="ok">🟢 3年未満</option>
+              </select>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>施主名</th><th>建物種別</th><th>工事内容</th><th>施工年</th><th>経過</th><th>保証期限</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>施主名</label><input class="fi" id="estClient" placeholder="例：田中 正幸"/></div>
+            <div class="fg"><label>建物種別</label>
+              <select class="fs" id="estBldg">
+                <option value="house">一般住宅（木造2階建）</option>
+                <option value="house_l">一般住宅（大型・3階建）</option>
+                <option value="apt">アパート・マンション</option>
+                <option value="store">店舗・事務所</option>
+              </select>
+            </div>
+            <div class="fg"><label>屋根の工事内容</label>
+              <select class="fs" id="estWork">
+                <option value="cover">屋根カバー工法（重ね葺き）</option>
+                <option value="replace">屋根葺き替え工事</option>
+                <option value="paint">屋根塗装工事</option>
+                <option value="waterproof">防水工事（陸屋根・ベランダ）</option>
+                <option value="repair">雨漏り修理・部分補修</option>
+                <option value="set">屋根＋外壁塗装セット</option>
+                <option value="gutter">雨樋交換工事</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>屋根材料</label>
+                <select class="fs" id="estMaterial">
+                  <option value="galv">ガルバリウム鋼板</option>
+                  <option value="slate">スレート（コロニアル）</option>
+                  <option value="tile">瓦（陶器・セメント）</option>
+                  <option value="asphalt">アスファルトシングル</option>
+                </select>
+              </div>
+              <div class="fg"><label>屋根の状態</label>
+                <select class="fs" id="estCond">
+                  <option value="normal">定期メンテナンス</option>
+                  <option value="heavy">劣化・雨漏りあり</option>
+                  <option value="urgent">緊急修理が必要</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>オプション</label>
+              <div style="display:flex;flex-direction:column;gap:6px;margin-top:4px">
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="op1"> 足場設置・解体費用込み</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="op2"> 外壁塗装同時施工（セット割）</label>
+                <label style="font-size:11px;display:flex;align-items:center;gap:4px"><input type="checkbox" id="op3"> 火災保険申請サポート</label>
+              </div>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：2階建・急勾配、雨漏り箇所あり等"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← 工事内容を選んで<br>「見積書を作成する」を押してください<br><br>🏠 屋根種別・材料・状態から<br>概算金額が自動で計算されます</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">街の屋根やさん埼玉上尾店</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">上尾市・桶川市・伊奈町（埼玉全域対応）<br>TEL: 0120-748-158　info@partner-life.jp</div>
+                  </div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">施主様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>建物種別：<strong id="estDocBldg"></strong></div>
+                  <div>工事内容：<strong id="estDocWork"></strong></div>
+                  <div>屋根材料：<strong id="estDocMat"></strong></div>
+                  <div>有効期限：<strong id="estDocExp"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>工事項目</th><th style="text-align:right">概算金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total"><span class="tl">概算合計金額（税込）</span><span class="tv" id="estTotal"></span></div>
+                <div style="background:var(--orange-light);border-left:3px solid var(--orange);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px">
+                  🛡️ 最長15年保証 | 住宅瑕疵担保責任保険加入 | 点検・調査・お見積り無料
+                </div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">📄 施工完了報告書 作成</div>
+            <div class="fg"><label>施主名</label><input class="fi" id="repClient" placeholder="例：田中 正幸"/></div>
+            <div class="fg"><label>施工場所</label><input class="fi" id="repAddr" placeholder="例：上尾市XX1丁目"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>着工日</label><input class="fi" type="date" id="repStart"/></div>
+              <div class="fg"><label>完工日</label><input class="fi" type="date" id="repEnd"/></div>
+            </div>
+            <div class="fg"><label>工事内容</label>
+              <select class="fs" id="repWork">
+                <option>屋根カバー工法（ガルバリウム鋼板）</option>
+                <option>屋根葺き替え工事（ガルバリウム）</option>
+                <option>屋根塗装工事（フッ素系塗料）</option>
+                <option>防水工事（ウレタン防水）</option>
+                <option>雨漏り修理・部分補修</option>
+                <option>屋根＋外壁塗装セット工事</option>
+              </select>
+            </div>
+            <div class="fg"><label>保証内容</label>
+              <select class="fs" id="repWarranty">
+                <option value="15">最長15年保証（まもりすまい保険）</option>
+                <option value="10">10年保証</option>
+                <option value="5">5年保証</option>
+              </select>
+            </div>
+            <div class="fg"><label>施工担当</label><input class="fi" id="repStaff" placeholder="例：田中/鈴木"/></div>
+            <div class="fg"><label>施工結果</label>
+              <select class="fs" id="repResult">
+                <option>問題なし・良好に完工</option>
+                <option>一部追加補修あり・次回点検推奨</option>
+              </select>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">施工完了報告書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head">
+              <span class="prev-title">施工完了報告書 プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="repPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF保存</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="repEmpty">← 施工内容を入力して<br>「施工完了報告書を作成する」を押してください</div>
+              <div class="doc" id="repDoc" style="display:none">
+                <div class="doc-header">
+                  <div>
+                    <div class="doc-company">街の屋根やさん埼玉上尾店</div>
+                    <div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">TEL: 0120-748-158　info@partner-life.jp<br>施工実績10,000棟 | 最長15年保証</div>
+                  </div>
+                  <div><div class="doc-type" style="font-size:15px">施工完了報告書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="repDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">施主様</div><div class="tn" id="repDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施工場所：<strong id="repDocAddr"></strong></div>
+                  <div>担当：<strong id="repDocStaff"></strong></div>
+                  <div>着工〜完工：<strong id="repDocPeriod"></strong></div>
+                  <div>保証内容：<strong id="repDocWarranty"></strong></div>
+                </div>
+                <div id="repCheckSections"></div>
+                <div style="margin:10px 0;background:var(--green-light);padding:8px 12px;border-radius:4px;font-size:12px;font-weight:700;color:var(--green)" id="repDocResult"></div>
+                <div style="background:var(--orange-light);border-left:3px solid var(--orange);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px" id="repDocNextNote"></div>
+                <div class="doc-note" id="repDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const today=new Date();
+document.getElementById('todayLabel').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayISO=today.toISOString().split('T')[0];
+document.getElementById('repStart').value=todayISO;
+document.getElementById('repEnd').value=todayISO;
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const t={dashboard:'ダッシュボード',customers:'顧客・フォロー管理',estimate:'見積書作成',report:'施工完了報告書'};
+  document.getElementById('pageTitle').textContent=t[id];
+}
+
+const customers=[
+  {name:'田中 正幸',bldg:'一般住宅',work:'屋根カバー工法',year:2013,elapsed:13,warranty:'2028年',status:'urgent'},
+  {name:'鈴木 和夫',bldg:'一般住宅',work:'屋根葺き替え（ガルバリウム）',year:2014,elapsed:12,warranty:'期限超過',status:'urgent'},
+  {name:'山本 哲也',bldg:'一般住宅',work:'屋根塗装工事',year:2015,elapsed:11,warranty:'2025年',status:'urgent'},
+  {name:'佐藤 建二',bldg:'一般住宅',work:'屋根カバー工法（ガルバリウム）',year:2018,elapsed:8,warranty:'2033年',status:'warn'},
+  {name:'高橋 隆',bldg:'アパート',work:'屋根葺き替え＋外壁塗装',year:2019,elapsed:7,warranty:'2034年',status:'warn'},
+  {name:'中村 清美',bldg:'一般住宅',work:'雨漏り修理・防水',year:2022,elapsed:4,warranty:'2027年',status:'ok'},
+];
+const sLabel={urgent:'🔴 点検時期超過',warn:'🟠 7〜10年',ok:'🟢 3年未満'};
+const sClass={urgent:'b-red',warn:'b-orange',ok:'b-green'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td style="font-weight:700">${c.name} 様</td>
+      <td style="font-size:11px">${c.bldg}</td>
+      <td style="font-size:11px">${c.work}</td>
+      <td style="font-size:11px">${c.year}年</td>
+      <td><span class="badge ${sClass[c.status]}">${c.elapsed}年経過</span></td>
+      <td style="font-size:11px">${c.warranty}</td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-sky">📞</button>
+        <button class="act a-orange" onclick="loadEstimate('${c.name}')">💴 見積</button>
+        <button class="act a-ghost" onclick="loadReport('${c.name}')">📄 報告書</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+function filterCust(v){renderCust(v==='all'?customers:customers.filter(c=>c.status===v));}
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+function loadReport(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='施工完了報告書';
+  document.getElementById('repClient').value=name;
+}
+
+// 見積書
+const bldgBase={house:500000,house_l:800000,apt:1200000,store:700000};
+const bldgLabel={house:'一般住宅（木造2階建）',house_l:'一般住宅（大型・3階建）',apt:'アパート・マンション',store:'店舗・事務所'};
+const workData={
+  cover:{name:'屋根カバー工法（重ね葺き）',mult:1.0},
+  replace:{name:'屋根葺き替え工事',mult:1.4},
+  paint:{name:'屋根塗装工事',mult:0.5},
+  waterproof:{name:'防水工事',mult:0.6},
+  repair:{name:'雨漏り修理・部分補修',mult:0.3},
+  set:{name:'屋根＋外壁塗装セット',mult:1.6},
+  gutter:{name:'雨樋交換工事',mult:0.25},
+};
+const matLabel={galv:'ガルバリウム鋼板',slate:'スレート（コロニアル）',tile:'瓦（陶器・セメント）',asphalt:'アスファルトシングル'};
+const matMult={galv:1,slate:0.9,tile:1.3,asphalt:0.85};
+const condMult={normal:1,heavy:1.2,urgent:1.4};
+const condLabel={normal:'定期メンテナンス',heavy:'劣化・雨漏りあり',urgent:'緊急修理が必要'};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const bldg=document.getElementById('estBldg').value;
+  const work=document.getElementById('estWork').value;
+  const mat=document.getElementById('estMaterial').value;
+  const cond=document.getElementById('estCond').value;
+  const op1=document.getElementById('op1').checked;
+  const op2=document.getElementById('op2').checked;
+  const op3=document.getElementById('op3').checked;
+  const note=document.getElementById('estNote').value;
+  const w=workData[work];
+  let base=Math.floor(bldgBase[bldg]*w.mult*matMult[mat]*condMult[cond]);
+  let items=[{n:w.name+'（'+matLabel[mat]+'）',p:base}];
+  if(op1) items.push({n:'仮設足場設置・解体費用',p:150000});
+  if(op2) items.push({n:'外壁塗装同時施工（セット割）',p:Math.floor(base*0.4),note:'同時施工による割引含む'});
+  if(op3) items.push({n:'火災保険申請サポート',p:0,note:'無料サービス'});
+  const sub=items.reduce((s,i)=>s+(i.p||0),0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+30);
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 様';
+  document.getElementById('estDocBldg').textContent=bldgLabel[bldg];
+  document.getElementById('estDocWork').textContent=w.name;
+  document.getElementById('estDocMat').textContent=matLabel[mat];
+  document.getElementById('estDocExp').textContent=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estRows').innerHTML=items.map(i=>`<tr><td>${i.n}${i.note?' （'+i.note+'）':''}</td><td style="text-align:right">${i.p===0?'無料サービス':'¥'+i.p.toLocaleString()}</td></tr>`).join('')
+  +`<tr style="background:var(--gray-bg)"><td style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>
+   <tr style="background:var(--gray-bg)"><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estTotal').textContent='¥'+total.toLocaleString()+'（概算）';
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・上記は概算です。現地調査後に正式見積をご提示します。\n・点検・調査・お見積りは無料です。\n・火災保険が適用できる場合があります（無料でご確認いたします）。';
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+
+// 施工報告書
+const repChecks={
+  '施工前確認':['現地・屋根状態の最終確認','近隣へのご挨拶・養生確認','仮設足場の安全確認'],
+  '施工内容':['既存屋根材の撤去・清掃（葺き替えの場合）','防水シート（ルーフィング）施工','屋根材取付・固定工事','棟板金・雨押え板金取付','コーキング・防水処理'],
+  '施工後確認':['屋根全体の仕上がり確認','雨漏り防水試験','足場解体・清掃・廃材処分','お客様立会い最終確認'],
+};
+
+function generateReport(){
+  const client=document.getElementById('repClient').value||'　';
+  const addr=document.getElementById('repAddr').value||'　';
+  const start=document.getElementById('repStart').value;
+  const end=document.getElementById('repEnd').value;
+  const work=document.getElementById('repWork').value;
+  const warranty=document.getElementById('repWarranty').value;
+  const staff=document.getElementById('repStaff').value||'担当者';
+  const result=document.getElementById('repResult').value;
+  if(!client.trim()){alert('施主名を入力してください');return;}
+  const startStr=new Date(start).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const endStr=new Date(end).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const nextYear=parseInt(new Date(end).getFullYear())+parseInt(warranty);
+  document.getElementById('repDocDate').textContent='発行日：'+todayStr;
+  document.getElementById('repDocClient').textContent=client+' 様';
+  document.getElementById('repDocAddr').textContent=addr;
+  document.getElementById('repDocStaff').textContent=staff;
+  document.getElementById('repDocPeriod').textContent=startStr+'〜'+endStr;
+  document.getElementById('repDocWarranty').textContent=warranty+'年保証（'+nextYear+'年まで）';
+  document.getElementById('repDocResult').textContent='✅ 施工完了：'+result;
+  document.getElementById('repCheckSections').innerHTML=Object.entries(repChecks).map(([title,items])=>`
+    <div class="check-section">
+      <div class="check-title">${title}</div>
+      <div class="check-items">${items.map(i=>`<div class="check-item"><span class="ck">✓</span>${i}</div>`).join('')}</div>
+    </div>`).join('');
+  document.getElementById('repDocNextNote').textContent='🔔 次回点検目安：施工から5年後（'+（parseInt(new Date(end).getFullYear())+5）+'年）に無料点検をご案内いたします。';
+  document.getElementById('repDocNote').textContent='・本報告書は施工完了の証明としてご保管ください。\n・保証期間中の不具合は無償で対応いたします。\n・次回のメンテナンスもお気軽にご相談ください。\n　街の屋根やさん埼玉上尾店　TEL: 0120-748-158';
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+}
+</script>
+</body>
+</html>
