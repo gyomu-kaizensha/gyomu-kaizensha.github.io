@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>あい水道サービス 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#1a3a6e;
+  --navy-mid:#2a5090;
+  --navy-light:#e8eef8;
+  --orange:#f5a500;
+  --orange-light:#fff8e6;
+  --green:#06c755;
+  --green-light:#e6fff0;
+  --red:#dc2626;
+  --gray-bg:#f5f7fa;
+  --ink:#1a2535;
+  --gray:#5a6a75;
+  --line:#d0dce8;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#0a1830;color:#7db0f0;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--navy);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:18px 16px;border-bottom:1px solid rgba(255,255,255,.15)}
+.logo-icon{font-size:24px;margin-bottom:6px}
+.logo-name{font-size:13px;font-weight:700;color:#fff;line-height:1.4}
+.logo-orange{color:var(--orange)}
+.logo-sub{font-size:10px;color:rgba(255,255,255,.45);margin-top:2px}
+.nav-section{padding:10px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.15em;padding:8px 16px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 16px;font-size:12px;color:rgba(255,255,255,.7);cursor:pointer;transition:all .15s}
+.nav-item:hover{background:rgba(255,255,255,.1);color:#fff}
+.nav-item.active{background:rgba(255,255,255,.18);color:#fff;border-right:3px solid var(--orange)}
+.nav-icon{font-size:15px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:14px 16px;border-top:1px solid rgba(255,255,255,.12);font-size:10px;color:rgba(255,255,255,.32);line-height:1.7}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:52px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
+.date-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:22px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:14px 16px;border:1px solid var(--line);border-top:3px solid var(--navy)}
+.kpi .kn{font-size:26px;font-weight:700;line-height:1;color:var(--navy)}
+.kpi.urgent .kn{color:var(--red)}
+.kpi.warn .kn{color:var(--orange)}
+.kpi.line .kn{color:var(--green)}
+.kpi .kl{font-size:11px;color:var(--gray);margin-top:5px}
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:18px}
+.card-head{padding:12px 18px;display:flex;align-items:center;justify-content:space-between;border-bottom:2px solid var(--navy);background:var(--navy)}
+.card-title{font-size:13px;font-weight:700;color:#fff}
+.card-orange{color:var(--orange)}
+.filter-bar{display:flex;gap:8px;flex-wrap:wrap}
+.f-sel{border:1px solid rgba(255,255,255,.3);border-radius:4px;padding:5px 9px;font-size:11px;font-family:inherit;background:rgba(255,255,255,.15);color:#fff}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{background:var(--navy-light);padding:9px 12px;text-align:left;font-size:11px;font-weight:700;color:var(--navy);border-bottom:1px solid var(--line)}
+.tbl td{padding:11px 12px;border-bottom:1px solid var(--line);font-size:12px;vertical-align:middle}
+.tbl tr:last-child td{border:none}
+.tbl tr:hover td{background:var(--navy-light)}
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:4px}
+.b-red{background:#fef2f2;color:var(--red)}
+.b-orange{background:var(--orange-light);color:#c07000}
+.b-green{background:var(--green-light);color:#059043}
+.b-navy{background:var(--navy-light);color:var(--navy)}
+.act-cell{display:flex;gap:5px;flex-wrap:wrap}
+.act{font-size:11px;font-weight:700;padding:5px 9px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.a-navy{background:var(--navy);color:#fff}
+.a-orange{background:var(--orange);color:#fff}
+.a-line{background:var(--green);color:#fff}
+.a-ghost{background:var(--navy-light);color:var(--navy);border:1px solid var(--line)}
+.two-col{display:grid;grid-template-columns:370px 1fr;gap:18px}
+@media(max-width:800px){.two-col{grid-template-columns:1fr}}
+.form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:18px}
+.form-sec{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:12px;padding-bottom:8px;border-bottom:2px solid var(--navy)}
+.fg{margin-bottom:12px}
+.fg label{font-size:11px;font-weight:700;color:var(--gray);display:block;margin-bottom:4px}
+.fi,.fs{width:100%;border:1px solid var(--line);border-radius:5px;padding:8px 10px;font-size:12px;font-family:inherit;transition:border-color .15s}
+.fi:focus,.fs:focus{outline:none;border-color:var(--navy)}
+.fg-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gen-btn{width:100%;background:var(--navy);color:#fff;border:none;padding:11px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px}
+.gen-btn:hover{background:var(--navy-mid)}
+.preview-card{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.prev-head{padding:12px 18px;border-bottom:2px solid var(--navy);display:flex;align-items:center;justify-content:space-between;background:var(--navy)}
+.prev-title{font-size:12px;font-weight:700;color:var(--orange)}
+.prev-btns{display:flex;gap:7px}
+.pb{font-size:11px;font-weight:700;padding:6px 12px;border-radius:4px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:4px}
+.pb-pdf{background:var(--red);color:#fff}
+.pb-print{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.3)}
+.prev-body{padding:18px}
+.prev-empty{text-align:center;padding:50px 20px;color:var(--gray);font-size:12px;line-height:2}
+.doc{font-size:12px}
+.doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px;padding-bottom:12px;border-bottom:2px solid var(--navy)}
+.doc-company{font-size:14px;font-weight:700;color:var(--navy)}
+.doc-type{font-size:17px;font-weight:700;color:var(--navy);text-align:right}
+.doc-to{background:var(--navy-light);padding:8px 12px;border-radius:4px;margin-bottom:12px;border-left:4px solid var(--navy)}
+.doc-to .tl{font-size:10px;color:var(--gray);margin-bottom:2px}
+.doc-to .tn{font-size:14px;font-weight:700}
+.doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;font-size:11px;background:var(--gray-bg);padding:8px 10px;border-radius:4px}
+.doc-table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}
+.doc-table th{background:var(--navy);color:#fff;padding:7px 9px;text-align:left;font-weight:500}
+.doc-table td{padding:7px 9px;border-bottom:1px solid var(--line)}
+.doc-total{background:var(--navy);color:#fff;border-radius:4px;padding:10px 14px;display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.doc-total .tl{font-size:11px;opacity:.8}
+.doc-total .tv{font-size:18px;font-weight:700;color:var(--orange)}
+.doc-note{font-size:10px;color:var(--gray);background:var(--gray-bg);padding:8px 10px;border-radius:4px;line-height:1.8}
+</style>
+</head>
+<body>
+<div class="demo-bar">⚠️ デモ画面 — あい水道サービス様向け 業務管理システム イメージ（業務改善舎 作成）</div>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🚰</div>
+      <div class="logo-name"><span class="logo-orange">あい</span>水道サービス</div>
+      <div class="logo-sub">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)"><span class="nav-icon">🏠</span>ダッシュボード</div>
+      <div class="nav-item" onclick="showPage('customers',this)"><span class="nav-icon">👥</span>顧客・フォロー管理</div>
+      <div class="nav-item" onclick="showPage('estimate',this)"><span class="nav-icon">💴</span>見積書作成</div>
+      <div class="nav-item" onclick="showPage('report',this)"><span class="nav-icon">📄</span>施工完了報告書</div>
+    </nav>
+    <div class="sidebar-footer">あい水道サービス<br>さいたま市（埼玉全域対応）<br>0120-558-440</div>
+  </aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <span class="date-badge" id="todayLabel"></span>
+    </div>
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi urgent"><div class="kn">5</div><div class="kl">🔴 給湯器・買い替え時期</div></div>
+          <div class="kpi warn"><div class="kn">8</div><div class="kl">🟠 設置から7〜10年（要注意）</div></div>
+          <div class="kpi line"><div class="kn">3</div><div class="kl">💬 LINE未対応の問い合わせ</div></div>
+          <div class="kpi"><div class="kn">32</div><div class="kl">🔧 管理中の顧客数</div></div>
+        </div>
+
+        <div style="background:linear-gradient(135deg,var(--navy) 0%,var(--navy-mid) 100%);border-radius:8px;padding:14px 20px;margin-bottom:18px;color:#fff;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+          <div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:4px">🚿 給湯器・エコキュートは設置10年が買い替えの目安</div>
+            <div style="font-size:11px;opacity:.85">高単価案件（10〜30万円）を自動でリストアップ。連絡タイミングを逃しません。</div>
+          </div>
+          <div style="background:var(--orange);padding:6px 14px;border-radius:4px;font-size:11px;font-weight:700">今月 要フォロー 5件</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">🔴 <span class="card-orange">給湯器・エコキュート</span>の買い替え時期が来ているお客様</span></div>
+          <div style="padding:10px 18px;font-size:11px;color:#c07000;background:var(--orange-light);border-bottom:1px solid var(--line)">
+            💡 給湯器の平均寿命は10〜15年。設置から一定期間経過したお客様への案内が高単価リピートにつながります。
+          </div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>設置場所</th><th>機器種別</th><th>設置年</th><th>経過</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td><div style="font-weight:700">山田 恵子 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX1丁目</div></td><td>一般住宅</td><td>ガス給湯器（16号）</td><td>2013年</td><td><span class="badge b-red">🔴 13年経過</span></td><td><div class="act-cell"><button class="act a-navy">📞 電話</button><button class="act a-line">LINE</button><button class="act a-orange" onclick="loadEstimate('山田 恵子')">💴 見積</button></div></td></tr>
+            <tr><td><div style="font-weight:700">鈴木 正男 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX2丁目</div></td><td>一般住宅</td><td>エコキュート（370L）</td><td>2014年</td><td><span class="badge b-red">🔴 12年経過</span></td><td><div class="act-cell"><button class="act a-navy">📞 電話</button><button class="act a-orange" onclick="loadEstimate('鈴木 正男')">💴 見積</button></div></td></tr>
+            <tr><td><div style="font-weight:700">佐藤 みさ 様</div><div style="font-size:10px;color:var(--gray)">さいたま市XX3丁目</div></td><td>マンション</td><td>電気温水器（200L）</td><td>2015年</td><td><span class="badge b-orange">🟠 11年経過</span></td><td><div class="act-cell"><button class="act a-navy">📞 電話</button><button class="act a-orange" onclick="loadEstimate('佐藤 みさ')">💴 見積</button></div></td></tr>
+          </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">📋 今月の対応・進行中案件</span></div>
+          <table class="tbl">
+            <thead><tr><th>依頼日</th><th>お客様名</th><th>依頼内容</th><th>エリア</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr><td>2026/05/05</td><td style="font-weight:700">田中 良子 様</td><td>トイレつまり修理</td><td>さいたま市</td><td><span class="badge b-green">🟢 完了</span></td><td><button class="act a-ghost" onclick="loadReport('田中 良子')">📄 報告書</button></td></tr>
+            <tr><td>2026/05/06</td><td style="font-weight:700">高橋 誠 様</td><td>給湯器交換工事</td><td>さいたま市</td><td><span class="badge b-orange">🟠 施工中</span></td><td><button class="act a-ghost" onclick="loadReport('高橋 誠')">📄 報告書</button></td></tr>
+            <tr><td>2026/05/06</td><td style="font-weight:700">中村 幸子 様</td><td>水漏れ修理（台所）</td><td>さいたま市</td><td><span class="badge b-navy">🔵 見積提出済</span></td><td><button class="act a-ghost" onclick="loadReport('中村 幸子')">📄 報告書</button></td></tr>
+          </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客・フォロー管理</span>
+            <div class="filter-bar">
+              <select class="f-sel" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 買い替え時期超過</option>
+                <option value="warn">🟠 7〜10年（要注意）</option>
+                <option value="ok">🟢 7年未満</option>
+              </select>
+            </div>
+          </div>
+          <table class="tbl">
+            <thead><tr><th>お客様名</th><th>エリア</th><th>機器種別</th><th>設置年</th><th>経過</th><th>状態</th><th>操作</th></tr></thead>
+          <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">💴 見積書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="estClient" placeholder="例：山田 恵子"/></div>
+            <div class="fg"><label>工事・修理の種類</label>
+              <select class="fs" id="estWork">
+                <option value="">-- 選択 --</option>
+                <option value="kyutoki_gas">給湯器交換（ガス給湯器）</option>
+                <option value="kyutoki_eco">給湯器交換（エコキュート）</option>
+                <option value="kyutoki_denki">給湯器交換（電気温水器）</option>
+                <option value="toilet_repair">トイレ修理（つまり・水漏れ）</option>
+                <option value="toilet_replace">トイレ交換・リフォーム</option>
+                <option value="kitchen_repair">台所水漏れ・蛇口修理</option>
+                <option value="kitchen_replace">キッチン蛇口・排水交換</option>
+                <option value="bath_repair">浴室水漏れ・蛇口修理</option>
+                <option value="pipe_repair">水道管修理・漏水調査</option>
+                <option value="wash_replace">洗面台交換・リフォーム</option>
+              </select>
+            </div>
+            <div class="fg-row">
+              <div class="fg"><label>建物種別</label>
+                <select class="fs" id="estBldg">
+                  <option value="house">一般住宅</option>
+                  <option value="mansion">マンション・アパート</option>
+                  <option value="store">店舗・事務所</option>
+                </select>
+              </div>
+              <div class="fg"><label>緊急度</label>
+                <select class="fs" id="estUrgency">
+                  <option value="normal">通常（計画工事）</option>
+                  <option value="urgent">急ぎ（水漏れ等）</option>
+                  <option value="emergency">緊急（即日対応）</option>
+                </select>
+              </div>
+            </div>
+            <div class="fg"><label>備考</label><input class="fi" id="estNote" placeholder="例：築20年・集合住宅3階 等"/></div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head"><span class="prev-title">見積書プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="estPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="estEmpty">← 工事の種類を選んで<br>「見積書を作成する」を押してください<br><br>🚰 水道工事の種別・建物種別から<br>概算金額が自動で計算されます</div>
+              <div class="doc" id="estDoc" style="display:none">
+                <div class="doc-header">
+                  <div><div class="doc-company">あい水道サービス</div><div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市（埼玉全域対応）<br>TEL: 0120-558-440　info@ai-suidou-service.com</div></div>
+                  <div><div class="doc-type">御 見 積 書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="estDocDate"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="estDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>工事内容：<strong id="estDocWork"></strong></div>
+                  <div>建物種別：<strong id="estDocBldg"></strong></div>
+                  <div>緊急度：<strong id="estDocUrgency"></strong></div>
+                  <div>有効期限：<strong id="estDocExp"></strong></div>
+                </div>
+                <table class="doc-table">
+                  <thead><tr><th>項目</th><th style="text-align:right">概算金額</th></tr></thead>
+                  <tbody id="estRows"></tbody>
+                </table>
+                <div class="doc-total"><span class="tl">合計金額（税込）</span><span class="tv" id="estTotal"></span></div>
+                <div style="background:var(--orange-light);border-left:3px solid var(--orange);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px">⚡ 最短30分で駆けつけ！お見積り・出張費無料</div>
+                <div class="doc-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="two-col">
+          <div class="form-card">
+            <div class="form-sec">📄 施工完了報告書 作成</div>
+            <div class="fg"><label>お客様名</label><input class="fi" id="repClient" placeholder="例：山田 恵子"/></div>
+            <div class="fg"><label>施工場所</label><input class="fi" id="repAddr" placeholder="例：さいたま市XX1丁目"/></div>
+            <div class="fg-row">
+              <div class="fg"><label>対応日</label><input class="fi" type="date" id="repDate"/></div>
+              <div class="fg"><label>担当者</label><input class="fi" id="repStaff" placeholder="例：田中"/></div>
+            </div>
+            <div class="fg"><label>工事・修理内容</label>
+              <select class="fs" id="repWork">
+                <option>給湯器交換工事（ガス給湯器）</option>
+                <option>給湯器交換工事（エコキュート）</option>
+                <option>トイレ修理（つまり解消）</option>
+                <option>トイレ修理（水漏れ修理）</option>
+                <option>台所水漏れ修理</option>
+                <option>浴室蛇口修理・交換</option>
+                <option>水道管漏水修理</option>
+                <option>洗面台交換工事</option>
+              </select>
+            </div>
+            <div class="fg"><label>施工結果</label>
+              <select class="fs" id="repResult">
+                <option>問題なし・良好に完了</option>
+                <option>修理完了・経過観察推奨</option>
+                <option>応急処置完了・後日本修理要</option>
+              </select>
+            </div>
+            <div class="fg"><label>次回フォロー</label>
+              <select class="fs" id="repNext">
+                <option value="10">10年後（給湯器・エコキュート）</option>
+                <option value="5">5年後（定期点検推奨）</option>
+                <option value="1">1年後（経過観察）</option>
+                <option value="0">フォロー不要</option>
+              </select>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">施工完了報告書を作成する</button>
+          </div>
+          <div class="preview-card">
+            <div class="prev-head"><span class="prev-title">施工完了報告書 プレビュー</span>
+              <div class="prev-btns">
+                <button class="pb pb-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="pb pb-pdf" id="repPdfBtn" style="display:none" onclick="alert('PDFダウンロード（デモ）')">📄 PDF</button>
+              </div>
+            </div>
+            <div class="prev-body">
+              <div class="prev-empty" id="repEmpty">← 対応内容を入力して<br>「施工完了報告書を作成する」を押してください</div>
+              <div class="doc" id="repDoc" style="display:none">
+                <div class="doc-header">
+                  <div><div class="doc-company">あい水道サービス</div><div style="font-size:10px;color:var(--gray);margin-top:3px;line-height:1.7">さいたま市（埼玉全域）　TEL: 0120-558-440</div></div>
+                  <div><div class="doc-type" style="font-size:15px">施工完了報告書</div><div style="font-size:10px;color:var(--gray);text-align:right;margin-top:4px" id="repDocDate2"></div></div>
+                </div>
+                <div class="doc-to"><div class="tl">お客様</div><div class="tn" id="repDocClient"></div></div>
+                <div class="doc-meta">
+                  <div>施工場所：<strong id="repDocAddr"></strong></div>
+                  <div>担当者：<strong id="repDocStaff"></strong></div>
+                  <div>施工内容：<strong id="repDocWork"></strong></div>
+                  <div>次回目安：<strong id="repDocNext"></strong></div>
+                </div>
+                <div style="margin-bottom:10px">
+                  <div style="font-size:11px;font-weight:700;color:var(--navy);margin-bottom:6px;border-bottom:1px solid var(--line);padding-bottom:4px">対応・確認項目</div>
+                  <div id="repChecks" style="display:flex;flex-direction:column;gap:4px;font-size:11px"></div>
+                </div>
+                <div style="background:var(--green-light);padding:8px 12px;border-radius:4px;font-size:12px;font-weight:700;color:#059043;margin-bottom:8px" id="repDocResult"></div>
+                <div style="background:var(--orange-light);border-left:3px solid var(--orange);padding:8px 12px;border-radius:0 4px 4px 0;font-size:11px;margin-bottom:8px" id="repDocNextNote"></div>
+                <div class="doc-note" id="repDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+<script>
+const today=new Date();
+document.getElementById('todayLabel').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+document.getElementById('repDate').value=today.toISOString().split('T')[0];
+
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const t={dashboard:'ダッシュボード',customers:'顧客・フォロー管理',estimate:'見積書作成',report:'施工完了報告書'};
+  document.getElementById('pageTitle').textContent=t[id];
+}
+
+const customers=[
+  {name:'山田 恵子',area:'さいたま市',device:'ガス給湯器（16号）',year:2013,elapsed:13,status:'urgent'},
+  {name:'鈴木 正男',area:'さいたま市',device:'エコキュート（370L）',year:2014,elapsed:12,status:'urgent'},
+  {name:'佐藤 みさ',area:'さいたま市',device:'電気温水器（200L）',year:2015,elapsed:11,status:'urgent'},
+  {name:'田中 良子',area:'さいたま市',device:'給湯器（ガス）',year:2018,elapsed:8,status:'warn'},
+  {name:'高橋 誠',area:'さいたま市',device:'エコキュート（460L）',year:2019,elapsed:7,status:'warn'},
+  {name:'中村 幸子',area:'さいたま市',device:'ガス給湯器（24号）',year:2021,elapsed:5,status:'ok'},
+  {name:'渡辺 博',area:'さいたま市',device:'電気温水器',year:2022,elapsed:4,status:'ok'},
+];
+const sLabel={urgent:'🔴 買い替え推奨',warn:'🟠 7〜10年',ok:'🟢 問題なし'};
+const sClass={urgent:'b-red',warn:'b-orange',ok:'b-green'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td style="font-weight:700">${c.name} 様</td>
+      <td style="font-size:11px">${c.area}</td>
+      <td style="font-size:11px">${c.device}</td>
+      <td style="font-size:11px">${c.year}年設置</td>
+      <td><span class="badge ${sClass[c.status]}">${c.elapsed}年経過</span></td>
+      <td><span class="badge ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="act-cell">
+        <button class="act a-navy">📞</button>
+        <button class="act a-orange" onclick="loadEstimate('${c.name}')">💴 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+function filterCust(v){renderCust(v==='all'?customers:customers.filter(c=>c.status===v));}
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[2].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estClient').value=name;
+}
+function loadReport(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='施工完了報告書';
+  document.getElementById('repClient').value=name;
+}
+
+const works={
+  kyutoki_gas:{name:'給湯器交換（ガス給湯器）',base:120000},
+  kyutoki_eco:{name:'給湯器交換（エコキュート）',base:280000},
+  kyutoki_denki:{name:'給湯器交換（電気温水器）',base:150000},
+  toilet_repair:{name:'トイレ修理（つまり・水漏れ）',base:15000},
+  toilet_replace:{name:'トイレ交換・リフォーム',base:80000},
+  kitchen_repair:{name:'台所水漏れ・蛇口修理',base:12000},
+  kitchen_replace:{name:'キッチン蛇口・排水交換',base:25000},
+  bath_repair:{name:'浴室水漏れ・蛇口修理',base:15000},
+  pipe_repair:{name:'水道管修理・漏水調査',base:30000},
+  wash_replace:{name:'洗面台交換・リフォーム',base:60000},
+};
+const bldgLabel={house:'一般住宅',mansion:'マンション・アパート',store:'店舗・事務所'};
+const bldgMult={house:1,mansion:1.1,store:1.2};
+const urgLabel={normal:'通常（計画工事）',urgent:'急ぎ（水漏れ等）',emergency:'緊急（即日対応）'};
+const urgMult={normal:1,urgent:1.2,emergency:1.4};
+
+function generateEstimate(){
+  const client=document.getElementById('estClient').value||'　';
+  const workKey=document.getElementById('estWork').value;
+  const bldg=document.getElementById('estBldg').value;
+  const urgency=document.getElementById('estUrgency').value;
+  const note=document.getElementById('estNote').value;
+  if(!workKey){alert('工事の種類を選んでください');return;}
+  const w=works[workKey];
+  const base=Math.floor(w.base*bldgMult[bldg]*urgMult[urgency]);
+  const tax=Math.floor(base*.1);
+  const total=base+tax;
+  const exp=new Date(today);exp.setDate(exp.getDate()+14);
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr+' / 有効期限：'+exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estDocClient').textContent=client+' 様';
+  document.getElementById('estDocWork').textContent=w.name;
+  document.getElementById('estDocBldg').textContent=bldgLabel[bldg];
+  document.getElementById('estDocUrgency').textContent=urgLabel[urgency];
+  document.getElementById('estDocExp').textContent=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  document.getElementById('estRows').innerHTML=`<tr><td>${w.name}</td><td style="text-align:right">¥${base.toLocaleString()}</td></tr>`
+  +(urgency!=='normal'?`<tr style="background:var(--orange-light)"><td>緊急対応割増料金（${Math.round((urgMult[urgency]-1)*100)}%）</td><td style="text-align:right;color:#c07000">含む</td></tr>`:'')
+  +`<tr style="background:var(--gray-bg)"><td style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${base.toLocaleString()}</td></tr>
+   <tr style="background:var(--gray-bg)"><td>消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=(note?'備考：'+note+'\n':'')+'・上記は概算です。現地確認後に正式見積をご提示します。\n・出張費・お見積り無料です。\n・最短30分で駆けつけます。';
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+}
+
+function generateReport(){
+  const client=document.getElementById('repClient').value||'　';
+  const addr=document.getElementById('repAddr').value||'　';
+  const date=document.getElementById('repDate').value;
+  const staff=document.getElementById('repStaff').value||'担当者';
+  const work=document.getElementById('repWork').value;
+  const result=document.getElementById('repResult').value;
+  const nextVal=document.getElementById('repNext').value;
+  if(!client.trim()){alert('お客様名を入力してください');return;}
+  const dateStr=new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const nextYear=parseInt(new Date(date).getFullYear())+parseInt(nextVal);
+  const nextText=nextVal==='0'?'不要':`約${nextVal}年後（${nextYear}年頃）`;
+  document.getElementById('repDocDate2').textContent='対応日：'+dateStr+'　発行：'+todayStr;
+  document.getElementById('repDocClient').textContent=client+' 様';
+  document.getElementById('repDocAddr').textContent=addr;
+  document.getElementById('repDocStaff').textContent=staff;
+  document.getElementById('repDocWork').textContent=work;
+  document.getElementById('repDocNext').textContent=nextText;
+  document.getElementById('repDocResult').textContent='✅ 施工完了：'+result;
+  const checks=['現地・設備状態の確認','既存設備の取外し・廃材処分（交換工事の場合）','新規設備の設置・接続工事','水圧・動作確認テスト','水漏れチェック','お客様への操作説明・引き渡し'];
+  document.getElementById('repChecks').innerHTML=checks.map(c=>`<div style="display:flex;align-items:center;gap:6px"><span style="color:#059043;font-weight:700">✓</span>${c}</div>`).join('');
+  document.getElementById('repDocNextNote').textContent=nextVal==='0'?'':('🔔 次回フォロー目安：'+nextText+'。点検時期が近づいたらご連絡いたします。');
+  document.getElementById('repDocNote').textContent='・施工後のご不明点はお気軽にご連絡ください（0120-558-440）。\n・給湯器・エコキュートは設置10年が買い替えの目安です。\n・LINEでも24時間ご相談を受け付けています。';
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+}
+</script>
+</body>
+</html>
