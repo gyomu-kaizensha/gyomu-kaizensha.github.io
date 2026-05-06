@@ -152,14 +152,20 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
 
 /* モバイル対応 */
 @media(max-width:768px){
-  .app{flex-direction:column}
-  .sidebar{width:100%;min-height:auto;flex-direction:column}
-  .sidebar-logo{padding:12px 16px}
-  .nav-section{padding:4px 0}
-  .nav-item{padding:8px 12px;font-size:11px}
-  .nav-label{display:none}
-  .sidebar-footer{display:none}
-  .topbar{padding:0 12px;height:44px}
+  .sidebar{
+    position:fixed;top:0;left:-100%;width:80%;max-width:280px;height:100%;
+    z-index:1000;transition:left .3s ease;
+  }
+  .sidebar.open{left:0}
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;
+    background:rgba(0,0,0,.5);z-index:999;}
+  .overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center;
+    width:40px;height:40px;cursor:pointer;font-size:20px;color:var(--ink);
+    background:none;border:none;padding:0;}
+  .topbar{position:sticky;top:0;z-index:100;padding:0 12px;height:44px;}
+  .app{display:block;}
+  .main{width:100%;overflow-x:hidden;}
   .topbar-title{font-size:13px}
   .content{padding:12px}
   .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
@@ -168,10 +174,16 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
   .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
   .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
   .filter-bar{flex-wrap:wrap}
-  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
-  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px}
-  .nav-item.active{border-right:none;border-bottom:3px solid #ffd180}
   .est-layout{grid-template-columns:1fr}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0}
+  .nav-item{padding:8px 12px;font-size:11px}
+  .nav-label{display:none}
+  .sidebar-footer{padding:16px 18px}
+}
+@media(min-width:769px){
+  .hamburger{display:none}
+  .overlay{display:none!important}
 }
 @media(max-width:480px){
   .kpi-row{grid-template-columns:1fr 1fr}
@@ -180,6 +192,8 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
 </style>
 </head>
 <body>
+
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
 
 <div class="demo-bar">⚠️ DEMO | 高野塗装様 業務管理システム（体験版）― 業務改善舎 作成</div>
 
@@ -219,6 +233,7 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
   <!-- Main -->
   <div class="main">
     <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
       <div class="topbar-title" id="pageTitle">ダッシュボード</div>
       <div class="topbar-right">
         <span class="today-badge" id="todayDate"></span>
@@ -545,6 +560,15 @@ body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gra
 </div>
 
 <script>
+function openSidebar(){
+  document.querySelector('.sidebar').classList.add('open');
+  document.getElementById('overlay').classList.add('open');
+}
+function closeSidebar(){
+  document.querySelector('.sidebar').classList.remove('open');
+  document.getElementById('overlay').classList.remove('open');
+}
+
 const today = new Date();
 document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
 
@@ -555,6 +579,7 @@ function showPage(id, el){
   if(el) el.classList.add('active');
   const titles={dashboard:'ダッシュボード',customers:'顧客管理',followup:'フォロー管理',estimate:'見積書作成',photos:'施工写真台帳'};
   document.getElementById('pageTitle').textContent=titles[id]||id;
+  closeSidebar();
 }
 
 const workTagMap={
