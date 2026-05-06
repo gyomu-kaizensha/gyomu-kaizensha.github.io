@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>藤田電気工事 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#1a3a6e;
+  --blue:#2979ff;
+  --blue-light:#e8eef8;
+  --blue-mid:#bbcfee;
+  --yellow:#f5c800;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --gray-bg:#f3f5fa;
+  --ink:#1a2035;
+  --gray:#5a6070;
+  --line:#dde3ea;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:var(--navy);color:#7eb3ff;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid var(--blue)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--navy)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi.accent .knum{color:var(--blue)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--navy)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+/* Table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#f5f8ff}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.sd-blue{background:var(--blue-light);color:var(--blue)}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--navy);color:#fff}
+.act-mail{background:var(--blue-light);color:var(--navy)}
+.act-est{background:#e8f4fd;color:var(--blue)}
+
+/* Facility type tags */
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;margin-right:3px}
+.tag-hospital{background:#fef2f2;color:#dc2626}
+.tag-school{background:#fff7ed;color:#ea580c}
+.tag-care{background:#f5f0ff;color:#7c3aed}
+.tag-gov{background:#e8eef8;color:#1a3a6e}
+.tag-general{background:#f0fdf4;color:#16a34a}
+
+/* Schedule page */
+.sched-timeline{display:flex;flex-direction:column;gap:12px;margin-bottom:20px}
+.sched-item{background:#fff;border-radius:8px;border:1px solid var(--line);padding:14px 18px;display:flex;align-items:flex-start;gap:14px;border-left:4px solid var(--blue)}
+.sched-item.urgent{border-left-color:var(--red)}
+.sched-item.done{border-left-color:var(--green);opacity:.75}
+.sched-date{font-size:13px;font-weight:700;color:var(--navy);min-width:80px}
+.sched-body{flex:1}
+.sched-client{font-size:13px;font-weight:700}
+.sched-detail{font-size:12px;color:var(--gray);margin-top:3px}
+.sched-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px}
+.sb-plan{background:var(--blue-light);color:var(--blue)}
+.sb-done{background:var(--green-light);color:var(--green)}
+.sb-urgent{background:#fef2f2;color:var(--red)}
+
+/* Report page */
+.report-row{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.report-row{grid-template-columns:1fr}}
+.report-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:16px}
+.report-card .rc-title{font-size:12px;color:var(--gray);font-weight:700;margin-bottom:10px}
+.bar-wrap{margin-bottom:8px}
+.bar-label{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.bar-track{background:var(--gray-bg);border-radius:3px;height:8px;overflow:hidden}
+.bar-fill{height:100%;border-radius:3px;background:var(--blue)}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--blue)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--blue);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:#1565c0}
+
+/* Estimate preview */
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--navy)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Estimate document */
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--navy)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--navy)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--navy);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--gray-bg);padding:10px 12px;border-radius:4px;margin-bottom:14px}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--navy);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:#7eb3ff}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px}
+  .nav-item.active{border-right:none;border-bottom:3px solid var(--blue)}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .report-row{grid-template-columns:1fr}
+  .est-layout{grid-template-columns:1fr}
+  .sched-item{flex-direction:column;gap:6px}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ DEMO | 藤田電気工事様 業務管理システム（体験版）— 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🏢</div>
+      <div class="company">藤田電気工事</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('customers',this)">
+        <span class="ni">🏢</span>顧客管理
+      </div>
+      <div class="nav-item" onclick="showPage('schedule',this)">
+        <span class="ni">📅</span>点検スケジュール
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+      <div class="nav-item" onclick="showPage('report',this)">
+        <span class="ni">📊</span>実績レポート
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      藤田電気工事<br>
+      埼玉・東京エリア対応<br>
+      業務用・官公庁・施設工事
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi accent">
+            <div class="knum">11</div>
+            <div class="klabel">🔧 今月の工事件数</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">4</div>
+            <div class="klabel">📅 業務用施設点検予定</div>
+          </div>
+          <div class="kpi">
+            <div class="knum">28</div>
+            <div class="klabel">🏢 法人顧客数</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">2</div>
+            <div class="klabel">📩 未対応問い合わせ</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📩 未対応の問い合わせ</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>施設名</th><th>施設種別</th><th>問い合わせ内容</th><th>受信日</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">○○市立第三小学校</div><div style="font-size:11px;color:var(--gray)">埼玉県某市</div></td>
+                <td><span class="tag tag-school">学校</span></td>
+                <td style="font-size:12px">体育館照明の不具合、至急対応希望</td>
+                <td style="font-size:12px">2025-05-05</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 折返し</button><button class="act-btn act-est" onclick="loadEstimate('○○市立第三小学校')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">△△介護老人施設</div><div style="font-size:11px;color:var(--gray)">東京都某区</div></td>
+                <td><span class="tag tag-care">介護施設</span></td>
+                <td style="font-size:12px">非常灯の定期点検見積依頼</td>
+                <td style="font-size:12px">2025-05-04</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 折返し</button><button class="act-btn act-est" onclick="loadEstimate('△△介護老人施設')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 今月の点検予定（業務用施設）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>施設名</th><th>施設種別</th><th>前回工事日</th><th>次回点検予定</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">□□総合病院</div><div style="font-size:11px;color:var(--gray)">埼玉県某市</div></td>
+                <td><span class="tag tag-hospital">病院</span></td>
+                <td>2024-05-10</td>
+                <td><span class="status-dot sd-soon">🟠 2025-05-10</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('□□総合病院')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">埼玉県○○事務所</div><div style="font-size:11px;color:var(--gray)">埼玉県某市</div></td>
+                <td><span class="tag tag-gov">官公庁</span></td>
+                <td>2024-05-22</td>
+                <td><span class="status-dot sd-soon">🟠 2025-05-22</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('埼玉県○○事務所')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">△△高等学校</div><div style="font-size:11px;color:var(--gray)">埼玉県某市</div></td>
+                <td><span class="tag tag-school">学校</span></td>
+                <td>2024-05-15</td>
+                <td><span class="status-dot sd-soon">🟠 2025-05-15</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('△△高等学校')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">○○特別養護老人ホーム</div><div style="font-size:11px;color:var(--gray)">東京都某区</div></td>
+                <td><span class="tag tag-care">介護施設</span></td>
+                <td>2024-05-28</td>
+                <td><span class="status-dot sd-blue">🔵 2025-05-28</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('○○特別養護老人ホーム')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客管理（施設別）</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterCustomers(this.value)">
+                <option value="all">すべて</option>
+                <option value="hospital">🏥 病院</option>
+                <option value="school">🏫 学校</option>
+                <option value="care">🏠 介護施設</option>
+                <option value="gov">🏛️ 官公庁</option>
+                <option value="general">🏢 一般法人</option>
+              </select>
+              <input class="search-box" type="text" placeholder="施設名で検索..." oninput="searchCustomers(this.value)"/>
+            </div>
+          </div>
+          <div style="overflow-x:auto">
+          <table class="cust-table">
+            <thead>
+              <tr><th>施設名</th><th>施設種別</th><th>前回工事日</th><th>次回点検予定</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="page" id="page-schedule">
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-head">
+            <span class="card-title">📅 点検スケジュール（2025年5月〜6月）</span>
+          </div>
+          <div style="padding:16px">
+            <div class="sched-timeline" id="schedTimeline">
+              <div class="sched-item urgent">
+                <div class="sched-date">5月7日（水）</div>
+                <div class="sched-body">
+                  <div class="sched-client">○○市立第三小学校</div>
+                  <div class="sched-detail"><span class="tag tag-school">学校</span>体育館照明 緊急対応・点検</div>
+                </div>
+                <span class="sched-badge sb-urgent">緊急対応</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-date">5月10日（土）</div>
+                <div class="sched-body">
+                  <div class="sched-client">□□総合病院</div>
+                  <div class="sched-detail"><span class="tag tag-hospital">病院</span>電気設備 年次定期点検</div>
+                </div>
+                <span class="sched-badge sb-plan">予定</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-date">5月15日（木）</div>
+                <div class="sched-body">
+                  <div class="sched-client">△△高等学校</div>
+                  <div class="sched-detail"><span class="tag tag-school">学校</span>電気設備 年次定期点検</div>
+                </div>
+                <span class="sched-badge sb-plan">予定</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-date">5月19日（月）</div>
+                <div class="sched-body">
+                  <div class="sched-client">△△介護老人施設</div>
+                  <div class="sched-detail"><span class="tag tag-care">介護施設</span>非常灯・誘導灯 定期点検</div>
+                </div>
+                <span class="sched-badge sb-plan">予定</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-date">5月22日（木）</div>
+                <div class="sched-body">
+                  <div class="sched-client">埼玉県○○事務所</div>
+                  <div class="sched-detail"><span class="tag tag-gov">官公庁</span>電気設備 年次定期点検</div>
+                </div>
+                <span class="sched-badge sb-plan">予定</span>
+              </div>
+              <div class="sched-item">
+                <div class="sched-date">5月28日（水）</div>
+                <div class="sched-body">
+                  <div class="sched-client">○○特別養護老人ホーム</div>
+                  <div class="sched-detail"><span class="tag tag-care">介護施設</span>電気設備・非常灯 定期点検</div>
+                </div>
+                <span class="sched-badge sb-plan">予定</span>
+              </div>
+              <div class="sched-item done">
+                <div class="sched-date">4月24日（木）</div>
+                <div class="sched-body">
+                  <div class="sched-client">□□市立中学校</div>
+                  <div class="sched-detail"><span class="tag tag-school">学校</span>電気設備 年次定期点検</div>
+                </div>
+                <span class="sched-badge sb-done">完了</span>
+              </div>
+              <div class="sched-item done">
+                <div class="sched-date">4月18日（金）</div>
+                <div class="sched-body">
+                  <div class="sched-client">○○クリニック</div>
+                  <div class="sched-detail"><span class="tag tag-hospital">病院</span>漏電修理・幹線工事</div>
+                </div>
+                <span class="sched-badge sb-done">完了</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">見積書作成</div>
+            <div class="form-group">
+              <label>施設名・お客様名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：□□総合病院"/>
+            </div>
+            <div class="form-group">
+              <label>工事の種類</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <optgroup label="業務用電気工事">
+                  <option value="biz_power">業務用電気工事（動力設備）</option>
+                  <option value="biz_light">業務用照明工事（蛍光灯→LED）</option>
+                  <option value="biz_trunk">幹線工事・受変電設備</option>
+                  <option value="biz_panel">分電盤・制御盤工事</option>
+                </optgroup>
+                <optgroup label="定期点検">
+                  <option value="inspect_annual">電気設備 年次定期点検</option>
+                  <option value="inspect_emg">非常灯・誘導灯 定期点検</option>
+                  <option value="inspect_leakage">漏電測定・絶縁測定</option>
+                </optgroup>
+                <optgroup label="緊急・修理">
+                  <option value="repair_leakage">漏電修理</option>
+                  <option value="repair_break">ブレーカー故障修理</option>
+                  <option value="repair_light">照明器具交換・修理</option>
+                </optgroup>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>施設種別</label>
+                <select class="form-select" id="facilityType">
+                  <option value="general">一般（標準）</option>
+                  <option value="hospital">病院・医療施設</option>
+                  <option value="care">介護・福祉施設</option>
+                  <option value="school">学校・教育施設</option>
+                  <option value="gov">官公庁・公共施設</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>規模（箇所数）</label>
+                <input class="form-input" type="number" id="qty" placeholder="例：1" min="1"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考・特記事項</label>
+              <input class="form-input" type="text" id="note" placeholder="例：夜間工事希望、無停電対応 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左で工事内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">藤田電気工事</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">埼玉・東京エリア対応<br>業務用電気工事・施設定期点検・官公庁対応</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">施設名・お客様</div>
+                  <div class="to-name" id="docCustName">　　　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">件名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>工事項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="report-row">
+          <div class="report-card">
+            <div class="rc-title">📊 施設種別 工事件数（今年度）</div>
+            <div class="bar-wrap"><div class="bar-label"><span>🏥 病院・医療</span><span>8件</span></div><div class="bar-track"><div class="bar-fill" style="width:80%;background:#dc2626"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>🏫 学校・教育</span><span>10件</span></div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#ea580c"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>🏠 介護・福祉</span><span>7件</span></div><div class="bar-track"><div class="bar-fill" style="width:70%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>🏛️ 官公庁</span><span>6件</span></div><div class="bar-track"><div class="bar-fill" style="width:60%;background:#1a3a6e"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>🏢 一般法人</span><span>9件</span></div><div class="bar-track"><div class="bar-fill" style="width:90%;background:#16a34a"></div></div></div>
+          </div>
+          <div class="report-card">
+            <div class="rc-title">📈 月別 工事件数（2025年）</div>
+            <div class="bar-wrap"><div class="bar-label"><span>1月</span><span>5件</span></div><div class="bar-track"><div class="bar-fill" style="width:45%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>2月</span><span>6件</span></div><div class="bar-track"><div class="bar-fill" style="width:55%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>3月</span><span>10件</span></div><div class="bar-track"><div class="bar-fill" style="width:91%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>4月</span><span>8件</span></div><div class="bar-track"><div class="bar-fill" style="width:73%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>5月（進行中）</span><span>11件</span></div><div class="bar-track"><div class="bar-fill" style="width:100%"></div></div></div>
+          </div>
+          <div class="report-card">
+            <div class="rc-title">🏆 主要顧客 継続年数</div>
+            <div class="bar-wrap"><div class="bar-label"><span>□□総合病院</span><span>8年</span></div><div class="bar-track"><div class="bar-fill" style="width:100%;background:#dc2626"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>△△高等学校</span><span>6年</span></div><div class="bar-track"><div class="bar-fill" style="width:75%;background:#ea580c"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>埼玉県○○事務所</span><span>5年</span></div><div class="bar-track"><div class="bar-fill" style="width:63%;background:#1a3a6e"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>○○特別養護老人ホーム</span><span>4年</span></div><div class="bar-track"><div class="bar-fill" style="width:50%"></div></div></div>
+            <div class="bar-wrap"><div class="bar-label"><span>□□市立中学校</span><span>3年</span></div><div class="bar-track"><div class="bar-fill" style="width:38%;background:#16a34a"></div></div></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><span class="card-title">📋 工事実績一覧（最近10件）</span></div>
+          <div style="overflow-x:auto">
+          <table class="cust-table">
+            <thead><tr><th>施設名</th><th>施設種別</th><th>工事内容</th><th>施工日</th><th>エリア</th></tr></thead>
+            <tbody>
+              <tr><td style="font-weight:700">□□市立中学校</td><td><span class="tag tag-school">学校</span></td><td style="font-size:12px">電気設備 年次定期点検</td><td>2025-04-24</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">○○クリニック</td><td><span class="tag tag-hospital">病院</span></td><td style="font-size:12px">漏電修理・幹線工事</td><td>2025-04-18</td><td style="font-size:12px">東京都某区</td></tr>
+              <tr><td style="font-weight:700">△△市営住宅管理事務所</td><td><span class="tag tag-gov">官公庁</span></td><td style="font-size:12px">共用部照明 LED化工事</td><td>2025-04-10</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">○○デイサービスセンター</td><td><span class="tag tag-care">介護施設</span></td><td style="font-size:12px">非常灯・誘導灯 定期点検</td><td>2025-04-07</td><td style="font-size:12px">東京都某区</td></tr>
+              <tr><td style="font-weight:700">埼玉県△△支庁</td><td><span class="tag tag-gov">官公庁</span></td><td style="font-size:12px">電気設備 年次定期点検</td><td>2025-03-27</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">□□総合病院</td><td><span class="tag tag-hospital">病院</span></td><td style="font-size:12px">手術室 電源設備補修工事</td><td>2025-03-20</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">○○小学校</td><td><span class="tag tag-school">学校</span></td><td style="font-size:12px">教室照明 LED改修工事</td><td>2025-03-15</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">△△特養老人ホーム</td><td><span class="tag tag-care">介護施設</span></td><td style="font-size:12px">電気設備 年次定期点検</td><td>2025-03-10</td><td style="font-size:12px">東京都某区</td></tr>
+              <tr><td style="font-weight:700">○○物流センター</td><td><span class="tag tag-general">一般法人</span></td><td style="font-size:12px">工場棟 動力設備工事</td><td>2025-03-05</td><td style="font-size:12px">埼玉県某市</td></tr>
+              <tr><td style="font-weight:700">△△市立体育館</td><td><span class="tag tag-gov">官公庁</span></td><td style="font-size:12px">電気設備 年次定期点検</td><td>2025-02-28</td><td style="font-size:12px">埼玉県某市</td></tr>
+            </tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+// ページ切替
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',customers:'顧客管理',schedule:'点検スケジュール',estimate:'見積書作成',report:'実績レポート'};
+  document.getElementById('pageTitle').textContent=titles[id];
+}
+
+// 顧客データ
+const customers=[
+  {name:'□□総合病院',addr:'埼玉県某市',type:'hospital',lastWork:'2024-05-10',nextInsp:'2025-05-10',status:'soon'},
+  {name:'△△高等学校',addr:'埼玉県某市',type:'school',lastWork:'2024-05-15',nextInsp:'2025-05-15',status:'soon'},
+  {name:'埼玉県○○事務所',addr:'埼玉県某市',type:'gov',lastWork:'2024-05-22',nextInsp:'2025-05-22',status:'soon'},
+  {name:'○○特別養護老人ホーム',addr:'東京都某区',type:'care',lastWork:'2024-05-28',nextInsp:'2025-05-28',status:'ok'},
+  {name:'△△介護老人施設',addr:'東京都某区',type:'care',lastWork:'2024-06-14',nextInsp:'2025-06-14',status:'ok'},
+  {name:'○○市立第三小学校',addr:'埼玉県某市',type:'school',lastWork:'2024-04-24',nextInsp:'2025-04-24',status:'urgent'},
+  {name:'□□市立中学校',addr:'埼玉県某市',type:'school',lastWork:'2025-04-24',nextInsp:'2026-04-24',status:'ok'},
+  {name:'○○クリニック',addr:'東京都某区',type:'hospital',lastWork:'2025-04-18',nextInsp:'2026-04-18',status:'ok'},
+  {name:'△△市営住宅管理事務所',addr:'埼玉県某市',type:'gov',lastWork:'2025-04-10',nextInsp:'2026-04-10',status:'ok'},
+  {name:'○○物流センター',addr:'埼玉県某市',type:'general',lastWork:'2025-03-05',nextInsp:'2026-03-05',status:'ok'},
+];
+
+const typeLabel={hospital:'病院',school:'学校',care:'介護施設',gov:'官公庁',general:'一般法人'};
+const typeTag={hospital:'tag-hospital',school:'tag-school',care:'tag-care',gov:'tag-gov',general:'tag-general'};
+const sLabel={urgent:'🔴 要対応',soon:'🟠 点検予定',ok:'🟢 正常'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+
+function renderCustomers(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name}</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td><span class="tag ${typeTag[c.type]}">${typeLabel[c.type]}</span></td>
+      <td style="font-size:12px">${c.lastWork}</td>
+      <td style="font-size:12px">${c.nextInsp}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-mail">✉️</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCustomers(customers);
+
+function filterCustomers(v){
+  renderCustomers(v==='all'?customers:customers.filter(c=>c.type===v));
+}
+function searchCustomers(v){
+  renderCustomers(v?customers.filter(c=>c.name.includes(v)):customers);
+}
+
+// 見積書データ
+const jobs={
+  biz_power:{name:'業務用電気工事（動力設備）',items:[
+    {n:'動力幹線ケーブル敷設',u:80000},
+    {n:'動力分電盤設置',u:60000},
+    {n:'モーター・機器接続工事',u:40000},
+    {n:'絶縁抵抗測定・試運転',u:15000}]},
+  biz_light:{name:'業務用照明工事（蛍光灯→LED改修）',items:[
+    {n:'LED照明器具（業務用）',u:12000},
+    {n:'既設器具撤去・処分',u:2500},
+    {n:'新規取付・配線工事',u:4500},
+    {n:'点灯確認・照度測定',u:1500}]},
+  biz_trunk:{name:'幹線工事・受変電設備',items:[
+    {n:'受変電設備 更新工事',u:500000},
+    {n:'高圧幹線ケーブル工事',u:200000},
+    {n:'低圧配電盤 改修',u:80000},
+    {n:'電気主任技術者 立会・確認',u:30000}]},
+  biz_panel:{name:'分電盤・制御盤工事',items:[
+    {n:'分電盤本体（業務用）',u:80000},
+    {n:'既設盤撤去・新設工事',u:50000},
+    {n:'幹線接続・ブレーカー設定',u:20000},
+    {n:'絶縁測定・動作確認',u:10000}]},
+  inspect_annual:{name:'電気設備 年次定期点検',items:[
+    {n:'外観・目視点検',u:15000},
+    {n:'絶縁抵抗測定',u:20000},
+    {n:'接地抵抗測定',u:10000},
+    {n:'動作・保護継電器試験',u:15000},
+    {n:'点検報告書作成',u:10000}]},
+  inspect_emg:{name:'非常灯・誘導灯 定期点検',items:[
+    {n:'非常灯 点灯試験（全灯）',u:5000},
+    {n:'誘導灯 点灯試験（全灯）',u:5000},
+    {n:'バッテリー容量確認',u:5000},
+    {n:'点検記録票作成',u:3000}]},
+  inspect_leakage:{name:'漏電測定・絶縁測定',items:[
+    {n:'漏電箇所特定調査',u:25000},
+    {n:'絶縁抵抗測定（全回路）',u:15000},
+    {n:'測定結果報告書作成',u:8000}]},
+  repair_leakage:{name:'漏電修理',items:[
+    {n:'漏電箇所特定・診断',u:20000},
+    {n:'配線修理・絶縁処理',u:30000},
+    {n:'修理後 絶縁確認測定',u:8000},
+    {n:'復旧確認・報告書作成',u:5000}]},
+  repair_break:{name:'ブレーカー故障修理',items:[
+    {n:'故障診断・原因調査',u:15000},
+    {n:'ブレーカー交換工事',u:20000},
+    {n:'動作確認・試験',u:5000}]},
+  repair_light:{name:'照明器具交換・修理',items:[
+    {n:'照明器具本体（業務用）',u:15000},
+    {n:'既設器具撤去・処分',u:3000},
+    {n:'新規取付・配線確認',u:5000},
+    {n:'点灯確認',u:1500}]},
+};
+
+// 施設種別による加算
+const facilityAdd={
+  hospital:{label:'病院・医療施設 対応加算',amount:30000},
+  care:{label:'介護・福祉施設 対応加算',amount:15000},
+  gov:{label:'官公庁 書類作成・立会費',amount:20000},
+  school:{label:'学校施設 夜間・休日対応費',amount:10000},
+  general:null,
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const ftype=document.getElementById('facilityType').value;
+  const qty=parseInt(document.getElementById('qty').value)||1;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('工事の種類を選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=[...job.items.map(i=>({...i,amount:i.u*qty}))];
+  const fadd=facilityAdd[ftype];
+  if(fadd) items.push({n:fadd.label,u:fadd.amount,amount:fadd.amount});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 御中';
+  document.getElementById('docJobName').textContent=job.name;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${qty}式</td><td style="text-align:right">¥${i.u.toLocaleString()}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'特記事項：'+note+'\n':'')+'・本見積りの有効期限は発行日より30日間です。\n・定期点検は毎年1回の実施を推奨しております。\n・官公庁・病院等は別途書類対応費が発生する場合があります。\n・上記金額には消費税（10%）が含まれています。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(26,58,110);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Fujita Denki Koji',14,12);
+  doc.setFontSize(9);
+  doc.text('Saitama / Tokyo  |  Commercial & Institutional Electrical Work',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(232,238,248);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(26,58,110);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname,18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,68);
+
+  doc.setFillColor(26,58,110);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,79.5);
+  doc.text('Qty',130,79.5);
+  doc.text('Unit',150,79.5);
+  doc.text('Amount',185,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(232,238,248);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text('1',133,y);
+    doc.text('Y'+item.u.toLocaleString(),152,y);
+    doc.text('Y'+item.amount.toLocaleString(),196,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(26,58,110);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(126,179,255);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: Valid 30 days. Annual inspection recommended.',14,y);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+6);}
+
+  doc.setFillColor(243,245,250);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Fujita Denki Koji  |  Saitama / Tokyo  |  Commercial & Institutional Electrical Work',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(/[\s　]/g,'')+'.pdf');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,909 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>草刈隊 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --green-dark:#2e7d32;
+  --green:#388e3c;
+  --green-light:#a5d6a7;
+  --green-bg:#f1f8f1;
+  --dark:#1b3a1b;
+  --yellow:#f5c800;
+  --orange:#e65100;
+  --red:#c62828;
+  --gray-bg:#f3f4f8;
+  --ink:#1a2e1a;
+  --gray:#5a6070;
+  --line:#dde3ea;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--green-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:var(--dark);color:var(--green-light);text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--green-dark);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid var(--green-light)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--green-dark)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--green-dark)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--green-dark)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+/* Customer table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--green-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#f5fbf5}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-teiki{background:#e8f5e9;color:var(--green-dark)}
+.sd-tanpatsu{background:#e3f2fd;color:#1565c0}
+.sd-mitsumori{background:#fff8e1;color:#f57f17}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--green-dark);color:#fff}
+.act-report{background:var(--green-light);color:var(--dark)}
+.act-est{background:#e8f5e9;color:var(--green-dark);border:1px solid var(--green-light)}
+
+/* Schedule page */
+.schedule-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:20px}
+.sch-day{background:#fff;border:1px solid var(--line);border-radius:6px;padding:8px 6px;text-align:center;min-height:80px}
+.sch-day-label{font-size:11px;font-weight:700;color:var(--gray);margin-bottom:6px}
+.sch-item{background:var(--green-bg);border:1px solid var(--green-light);border-radius:4px;padding:3px 5px;font-size:10px;color:var(--green-dark);margin-bottom:3px;line-height:1.4}
+.sch-item.urgent{background:#fbe9e7;border-color:#ffccbc;color:var(--orange)}
+
+/* Report page */
+.report-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.report-layout{grid-template-columns:1fr}}
+.report-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;letter-spacing:.05em}
+.form-input,.form-select,.form-textarea{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--green-dark)}
+.form-textarea{min-height:80px;resize:vertical}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--green-dark);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:var(--dark)}
+
+/* Report preview */
+.report-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--green-dark)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Report document */
+.rep-doc{font-size:13px}
+.rep-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--green-dark)}
+.rep-doc-company{font-size:16px;font-weight:700;color:var(--green-dark)}
+.rep-doc-label{font-size:20px;font-weight:700;color:var(--green-dark);text-align:right}
+.rep-section{background:var(--green-bg);border-left:3px solid var(--green-dark);padding:10px 14px;border-radius:0 6px 6px 0;margin-bottom:12px}
+.rep-section-title{font-size:11px;font-weight:700;color:var(--gray);margin-bottom:4px;letter-spacing:.05em}
+.rep-section-body{font-size:13px;color:var(--ink);line-height:1.6}
+.rep-meta-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--green-dark)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--green-dark)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--green-dark);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--green-bg);padding:10px 12px;border-radius:4px;margin-bottom:14px}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--green-dark);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--green-dark);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:var(--green-light)}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--green-bg);border-radius:4px}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px}
+  .nav-item.active{border-right:none;border-bottom:3px solid var(--green-light)}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .schedule-grid{grid-template-columns:repeat(3,1fr)}
+  .report-layout,.est-layout{grid-template-columns:1fr}
+  .rep-meta-grid,.est-doc-meta{grid-template-columns:1fr}
+  .form-row-2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+  .schedule-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">🌿 DEMO | 草刈隊様 業務管理システム（体験版）— 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🌿</div>
+      <div class="company">草刈隊</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('customers',this)">
+        <span class="ni">👥</span>顧客管理
+      </div>
+      <div class="nav-item" onclick="showPage('schedule',this)">
+        <span class="ni">📅</span>作業スケジュール
+      </div>
+      <div class="nav-item" onclick="showPage('report',this)">
+        <span class="ni">📝</span>現場報告書
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      草刈隊<br>
+      埼玉県対応エリア<br>
+      小規模〜重機使用の大規模作業
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum" id="kpi-month-count">8</div>
+            <div class="klabel">🌿 今月の作業件数</div>
+          </div>
+          <div class="kpi">
+            <div class="knum">12</div>
+            <div class="klabel">🔄 定期契約顧客数</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">5</div>
+            <div class="klabel">📅 今週の作業予定</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">3</div>
+            <div class="klabel">📝 現場報告書 未作成</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 今週の作業スケジュール</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>顧客名</th><th>物件種別</th><th>物件住所</th><th>作業日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">田中 修一 様</div></td>
+                <td><span class="status-dot sd-teiki">庭</span></td>
+                <td style="font-size:12px">さいたま市緑区XX</td>
+                <td style="font-size:12px">2026-05-07</td>
+                <td><span class="status-dot sd-teiki">定期</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('田中 修一','さいたま市緑区XX','庭の草刈り（定期）')">📝 報告書</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">山田 不動産 様</div></td>
+                <td><span class="status-dot sd-tanpatsu">空き家</span></td>
+                <td style="font-size:12px">川口市XX2丁目</td>
+                <td style="font-size:12px">2026-05-08</td>
+                <td><span class="status-dot sd-tanpatsu">単発</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('山田 不動産','川口市XX2丁目','空き家周辺除草・清掃')">📝 報告書</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">埼玉管理株式会社 様</div></td>
+                <td><span class="status-dot sd-mitsumori">法面</span></td>
+                <td style="font-size:12px">所沢市XX3丁目</td>
+                <td style="font-size:12px">2026-05-09</td>
+                <td><span class="status-dot sd-teiki">定期</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('埼玉管理株式会社','所沢市XX3丁目','法面草刈り（重機使用）')">📝 報告書</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📝 現場報告書 未作成（要対応）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>顧客名</th><th>作業日</th><th>物件種別</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">鈴木 良子 様</div></td>
+                <td style="font-size:12px">2026-05-02</td>
+                <td><span class="status-dot sd-teiki">庭</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('鈴木 良子','草加市XX1丁目','庭の草刈り（定期）')">📝 報告書作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">佐藤 一郎 様</div></td>
+                <td style="font-size:12px">2026-05-03</td>
+                <td><span class="status-dot sd-tanpatsu">空き地</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('佐藤 一郎','越谷市XX4丁目','空き地除草（単発）')">📝 報告書作成</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">グリーン管理 様</div></td>
+                <td style="font-size:12px">2026-05-05</td>
+                <td><span class="status-dot sd-mitsumori">法面</span></td>
+                <td><div class="action-cell"><button class="act-btn act-report" onclick="loadReport('グリーン管理','熊谷市XX5丁目','法面草刈り（重機）')">📝 報告書作成</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterCustomers(this.value)">
+                <option value="all">すべて</option>
+                <option value="teiki">定期</option>
+                <option value="tanpatsu">単発</option>
+                <option value="mitsumori">見積中</option>
+              </select>
+              <input class="search-box" type="text" placeholder="顧客名で検索..." oninput="searchCustomers(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table" id="custTable">
+            <thead>
+              <tr><th>顧客名</th><th>物件種別</th><th>前回作業日</th><th>次回予定</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="page" id="page-schedule">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 作業スケジュール（2026年5月）</span>
+          </div>
+          <div style="padding:16px">
+            <div class="schedule-grid" id="scheduleGrid"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">今月の確定作業一覧</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>作業日</th><th>顧客名</th><th>物件種別</th><th>住所</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>05/07</td><td>田中 修一 様</td><td><span class="status-dot sd-teiki">庭</span></td><td style="font-size:12px">さいたま市緑区</td><td><span class="status-dot sd-teiki">定期</span></td><td><button class="act-btn act-report" onclick="loadReport('田中 修一','さいたま市緑区XX','庭の草刈り（定期）')">📝 報告書</button></td></tr>
+              <tr><td>05/08</td><td>山田 不動産 様</td><td><span class="status-dot sd-tanpatsu">空き家</span></td><td style="font-size:12px">川口市</td><td><span class="status-dot sd-tanpatsu">単発</span></td><td><button class="act-btn act-report" onclick="loadReport('山田 不動産','川口市XX2丁目','空き家周辺除草')">📝 報告書</button></td></tr>
+              <tr><td>05/09</td><td>埼玉管理株式会社 様</td><td><span class="status-dot sd-mitsumori">法面</span></td><td style="font-size:12px">所沢市</td><td><span class="status-dot sd-teiki">定期</span></td><td><button class="act-btn act-report" onclick="loadReport('埼玉管理株式会社','所沢市XX3丁目','法面草刈り')">📝 報告書</button></td></tr>
+              <tr><td>05/13</td><td>伊藤 美子 様</td><td><span class="status-dot sd-teiki">庭</span></td><td style="font-size:12px">朝霞市</td><td><span class="status-dot sd-teiki">定期</span></td><td><button class="act-btn act-report" onclick="loadReport('伊藤 美子','朝霞市XX6丁目','庭の草刈り（定期）')">📝 報告書</button></td></tr>
+              <tr><td>05/15</td><td>渡辺 産業 様</td><td><span class="status-dot sd-mitsumori">空き地</span></td><td style="font-size:12px">熊谷市</td><td><span class="status-dot sd-tanpatsu">単発</span></td><td><button class="act-btn act-report" onclick="loadReport('渡辺 産業','熊谷市XX7丁目','空き地大型除草')">📝 報告書</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Report -->
+      <div class="page" id="page-report">
+        <div class="report-layout">
+          <div class="report-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--green-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">現場報告書作成</div>
+            <div class="form-group">
+              <label>作業日</label>
+              <input class="form-input" type="date" id="repDate"/>
+            </div>
+            <div class="form-group">
+              <label>顧客名</label>
+              <input class="form-input" type="text" id="repCust" placeholder="例：田中 修一"/>
+            </div>
+            <div class="form-group">
+              <label>物件住所</label>
+              <input class="form-input" type="text" id="repAddr" placeholder="例：さいたま市緑区XX1丁目"/>
+            </div>
+            <div class="form-group">
+              <label>作業内容</label>
+              <input class="form-input" type="text" id="repWork" placeholder="例：庭の草刈り（定期）"/>
+            </div>
+            <div class="form-group">
+              <label>ビフォーメモ（作業前の状況）</label>
+              <textarea class="form-textarea" id="repBefore" placeholder="例：雑草が膝丈まで繁茂。外来種（セイタカアワダチソウ）多数。"></textarea>
+            </div>
+            <div class="form-group">
+              <label>アフターメモ（作業後の状況）</label>
+              <textarea class="form-textarea" id="repAfter" placeholder="例：全面刈取完了。根元まで処理。除草剤散布済。"></textarea>
+            </div>
+            <div class="form-group">
+              <label>次回推奨時期</label>
+              <select class="form-select" id="repNext">
+                <option value="1ヶ月後">1ヶ月後（成長期・梅雨前）</option>
+                <option value="2ヶ月後">2ヶ月後（通常）</option>
+                <option value="3ヶ月後">3ヶ月後（秋口）</option>
+                <option value="半年後">半年後（冬季管理）</option>
+                <option value="1年後">1年後（来シーズン）</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>担当者</label>
+              <input class="form-input" type="text" id="repStaff" placeholder="例：草刈隊 山本"/>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">報告書を作成する</button>
+          </div>
+
+          <div class="report-preview">
+            <div class="ep-head">
+              <span class="ep-title">現場報告書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="repPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="repPdfBtn" onclick="downloadReportPDF()" style="display:none">📄 PDF出力</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="repEmpty">← 左で作業内容を入力して<br>「報告書を作成する」を押してください</div>
+              <div class="rep-doc" id="repDoc" style="display:none">
+                <div class="rep-doc-header">
+                  <div>
+                    <div class="rep-doc-company">🌿 草刈隊</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">埼玉県対応エリア<br>草刈り・除草・空き家管理</div>
+                  </div>
+                  <div>
+                    <div class="rep-doc-label">現場報告書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="repDocDate"></div>
+                  </div>
+                </div>
+                <div class="rep-meta-grid">
+                  <div class="rep-section">
+                    <div class="rep-section-title">顧客名</div>
+                    <div class="rep-section-body" id="repDocCust"></div>
+                  </div>
+                  <div class="rep-section">
+                    <div class="rep-section-title">物件住所</div>
+                    <div class="rep-section-body" id="repDocAddr"></div>
+                  </div>
+                </div>
+                <div class="rep-section" style="margin-bottom:12px">
+                  <div class="rep-section-title">作業内容</div>
+                  <div class="rep-section-body" id="repDocWork"></div>
+                </div>
+                <div class="rep-section" style="margin-bottom:12px">
+                  <div class="rep-section-title">ビフォー（作業前の状況）</div>
+                  <div class="rep-section-body" id="repDocBefore"></div>
+                </div>
+                <div class="rep-section" style="margin-bottom:12px">
+                  <div class="rep-section-title">アフター（作業後の状況）</div>
+                  <div class="rep-section-body" id="repDocAfter"></div>
+                </div>
+                <div class="rep-meta-grid">
+                  <div class="rep-section">
+                    <div class="rep-section-title">次回推奨時期</div>
+                    <div class="rep-section-body" id="repDocNext"></div>
+                  </div>
+                  <div class="rep-section">
+                    <div class="rep-section-title">担当者</div>
+                    <div class="rep-section-body" id="repDocStaff"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--green-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">見積書作成</div>
+            <div class="form-group">
+              <label>お客様名</label>
+              <input class="form-input" type="text" id="estCustName" placeholder="例：田中 修一"/>
+            </div>
+            <div class="form-group">
+              <label>物件住所</label>
+              <input class="form-input" type="text" id="estAddr" placeholder="例：さいたま市緑区XX1丁目"/>
+            </div>
+            <div class="form-group">
+              <label>作業の種類</label>
+              <select class="form-select" id="estJobType">
+                <option value="">-- 選択してください --</option>
+                <option value="niwa_s">庭の草刈り（〜30㎡）</option>
+                <option value="niwa_m">庭の草刈り（31〜80㎡）</option>
+                <option value="niwa_l">庭の草刈り（81㎡〜）</option>
+                <option value="akichi_s">空き地除草（〜100㎡）</option>
+                <option value="akichi_m">空き地除草（101〜300㎡）</option>
+                <option value="akichi_l">空き地除草（重機使用 301㎡〜）</option>
+                <option value="akiya">空き家管理（草刈り＋点検）</option>
+                <option value="nori">法面作業（急傾斜地）</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>面積（㎡）</label>
+                <input class="form-input" type="number" id="estArea" placeholder="例：50" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>除草剤散布</label>
+                <select class="form-select" id="estHerbicide">
+                  <option value="0">なし</option>
+                  <option value="1">あり（+追加料金）</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="estNote" placeholder="例：ごみ処分希望、急傾斜あり 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="estPrintBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="estPdfBtn" onclick="downloadEstimatePDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="estEmpty">← 左で作業内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">🌿 草刈隊</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">埼玉県対応エリア<br>草刈り・除草・空き家管理</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="estDocDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">お客様</div>
+                  <div class="to-name" id="estDocCustName">　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">物件住所：</span><span id="estDocAddr" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="estDocExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>作業項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="estDocRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="estDocTotal"></span>
+                </div>
+                <div class="est-note" id="estDocNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+// report date default
+const repDateEl = document.getElementById('repDate');
+if(repDateEl) repDateEl.value = today.toISOString().split('T')[0];
+
+// ページ切替
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',customers:'顧客管理',schedule:'作業スケジュール',report:'現場報告書',estimate:'見積書作成'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+}
+
+// 顧客データ
+const customers=[
+  {name:'田中 修一',addr:'さいたま市緑区XX1丁目',type:'庭',prev:'2026-03-10',next:'2026-05-07',status:'teiki'},
+  {name:'鈴木 良子',addr:'草加市XX2丁目',type:'庭',prev:'2026-02-20',next:'2026-05-20',status:'teiki'},
+  {name:'山田 不動産',addr:'川口市XX3丁目',type:'空き家',prev:'2025-11-15',next:'2026-05-08',status:'tanpatsu'},
+  {name:'佐藤 一郎',addr:'越谷市XX4丁目',type:'空き地',prev:'2026-03-05',next:'2026-06-05',status:'tanpatsu'},
+  {name:'埼玉管理株式会社',addr:'所沢市XX5丁目',type:'法面',prev:'2026-04-01',next:'2026-05-09',status:'teiki'},
+  {name:'伊藤 美子',addr:'朝霞市XX6丁目',type:'庭',prev:'2026-04-12',next:'2026-05-13',status:'teiki'},
+  {name:'渡辺 産業',addr:'熊谷市XX7丁目',type:'空き地',prev:'2025-09-20',next:'2026-05-15',status:'tanpatsu'},
+  {name:'グリーン管理',addr:'熊谷市XX8丁目',type:'法面',prev:'2026-04-20',next:'2026-07-01',status:'teiki'},
+  {name:'中村 建設',addr:'さいたま市中央区XX',type:'空き地',prev:'',next:'2026-05-20',status:'mitsumori'},
+];
+
+const typeLabel={teiki:'定期',tanpatsu:'単発',mitsumori:'見積中'};
+const typeClass={teiki:'sd-teiki',tanpatsu:'sd-tanpatsu',mitsumori:'sd-mitsumori'};
+
+function renderCustomers(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td><span class="status-dot ${typeClass[c.status]}">${c.type}</span></td>
+      <td style="font-size:12px">${c.prev||'—'}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${typeClass[c.status]}">${typeLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-report" onclick="loadReport('${c.name}','${c.addr}','作業')">📝 報告書</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}','${c.addr}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCustomers(customers);
+
+function filterCustomers(v){
+  renderCustomers(v==='all'?customers:customers.filter(c=>c.status===v));
+}
+function searchCustomers(v){
+  renderCustomers(v?customers.filter(c=>c.name.includes(v)):customers);
+}
+
+// スケジュールグリッド生成
+function buildSchedule(){
+  const grid=document.getElementById('scheduleGrid');
+  if(!grid) return;
+  const days=['月','火','水','木','金','土','日'];
+  const schedItems={
+    7:[{t:'田中 修一',k:'庭'}],
+    8:[{t:'山田 不動産',k:'空き家'}],
+    9:[{t:'埼玉管理',k:'法面',u:true}],
+    13:[{t:'伊藤 美子',k:'庭'}],
+    15:[{t:'渡辺 産業',k:'空き地'}],
+    20:[{t:'鈴木 良子',k:'庭'},{t:'中村 建設',k:'空き地'}],
+  };
+  let html='';
+  days.forEach(d=>{html+=`<div class="sch-day"><div class="sch-day-label">${d}</div></div>`;});
+  for(let i=1;i<=31;i++){
+    const items=schedItems[i]||[];
+    let inner=items.map(it=>`<div class="sch-item${it.u?' urgent':''}">${it.t}<br><small>${it.k}</small></div>`).join('');
+    html+=`<div class="sch-day"><div class="sch-day-label">${i}日</div>${inner}</div>`;
+  }
+  grid.innerHTML=html;
+}
+buildSchedule();
+
+// 報告書
+let currentRepData=null;
+function loadReport(name,addr,work){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('pageTitle').textContent='現場報告書';
+  document.getElementById('repCust').value=name;
+  document.getElementById('repAddr').value=addr;
+  document.getElementById('repWork').value=work;
+}
+
+function generateReport(){
+  const date=document.getElementById('repDate').value;
+  const cust=document.getElementById('repCust').value||'—';
+  const addr=document.getElementById('repAddr').value||'—';
+  const work=document.getElementById('repWork').value||'—';
+  const before=document.getElementById('repBefore').value||'記載なし';
+  const after=document.getElementById('repAfter').value||'記載なし';
+  const next=document.getElementById('repNext').value;
+  const staff=document.getElementById('repStaff').value||'草刈隊';
+  const dateStr=date?new Date(date).toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'}):today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('repDocDate').textContent='作業日：'+dateStr;
+  document.getElementById('repDocCust').textContent=cust+' 様';
+  document.getElementById('repDocAddr').textContent=addr;
+  document.getElementById('repDocWork').textContent=work;
+  document.getElementById('repDocBefore').textContent=before;
+  document.getElementById('repDocAfter').textContent=after;
+  document.getElementById('repDocNext').textContent=next;
+  document.getElementById('repDocStaff').textContent=staff;
+
+  document.getElementById('repEmpty').style.display='none';
+  document.getElementById('repDoc').style.display='block';
+  document.getElementById('repPdfBtn').style.display='flex';
+  document.getElementById('repPrintBtn').style.display='flex';
+
+  currentRepData={date:dateStr,cust,addr,work,before,after,next,staff};
+}
+
+function downloadReportPDF(){
+  if(!currentRepData) return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(46,125,50);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Kusakaritai',14,12);
+  doc.setFontSize(9);
+  doc.text('Grass Cutting & Weed Control - Saitama Area',14,20);
+  doc.setFontSize(18);
+  doc.text('WORK REPORT',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentRepData.date,14,36);
+  doc.text('Customer: '+currentRepData.cust,14,42);
+  doc.text('Address: '+currentRepData.addr,14,48);
+
+  const sections=[
+    {label:'Work Content',body:currentRepData.work},
+    {label:'Before (Status Before Work)',body:currentRepData.before},
+    {label:'After (Status After Work)',body:currentRepData.after},
+    {label:'Next Recommended Timing',body:currentRepData.next},
+    {label:'Staff',body:currentRepData.staff},
+  ];
+  let y=62;
+  sections.forEach(s=>{
+    doc.setFillColor(241,248,241);
+    doc.rect(14,y-4,182,16,'F');
+    doc.setFillColor(46,125,50);
+    doc.rect(14,y-4,3,16,'F');
+    doc.setTextColor(100,100,100);
+    doc.setFontSize(8);
+    doc.text(s.label,20,y+1);
+    doc.setTextColor(30,30,30);
+    doc.setFontSize(9);
+    const lines=doc.splitTextToSize(s.body,168);
+    doc.text(lines,20,y+7);
+    y+=20+(lines.length-1)*5;
+  });
+
+  doc.setFillColor(241,248,241);
+  doc.rect(0,278,210,19,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Kusakaritai  |  Saitama Prefecture  |  Grass Cutting / Weed Control / Vacant House Management',105,290,{align:'center'});
+
+  doc.save('report_'+currentRepData.cust.replace(/\s/g,'')+'.pdf');
+}
+
+// 見積書
+const estJobs={
+  niwa_s:{name:'庭の草刈り（〜30㎡）',unitPrice:400,items:[
+    {n:'草刈り作業費（㎡単価）',perSqm:true},{n:'刈草処分費（基本）',u:2000},{n:'現場清掃',u:1000}]},
+  niwa_m:{name:'庭の草刈り（31〜80㎡）',unitPrice:350,items:[
+    {n:'草刈り作業費（㎡単価）',perSqm:true},{n:'刈草処分費',u:3500},{n:'現場清掃',u:1500}]},
+  niwa_l:{name:'庭の草刈り（81㎡〜）',unitPrice:300,items:[
+    {n:'草刈り作業費（㎡単価）',perSqm:true},{n:'刈草処分費',u:5000},{n:'現場清掃',u:2000}]},
+  akichi_s:{name:'空き地除草（〜100㎡）',unitPrice:350,items:[
+    {n:'除草作業費（㎡単価）',perSqm:true},{n:'草木処分費',u:4000},{n:'現場清掃',u:1500}]},
+  akichi_m:{name:'空き地除草（101〜300㎡）',unitPrice:280,items:[
+    {n:'除草作業費（㎡単価）',perSqm:true},{n:'草木処分費',u:8000},{n:'現場清掃',u:2500}]},
+  akichi_l:{name:'空き地除草（重機使用 301㎡〜）',unitPrice:200,items:[
+    {n:'重機除草作業費（㎡単価）',perSqm:true},{n:'重機運搬費',u:20000},{n:'草木処分費',u:15000},{n:'現場清掃',u:5000}]},
+  akiya:{name:'空き家管理（草刈り＋点検）',unitPrice:350,items:[
+    {n:'草刈り・除草作業（㎡単価）',perSqm:true},{n:'空き家点検（外回り）',u:3000},{n:'作業報告書作成',u:2000},{n:'刈草処分費',u:4000}]},
+  nori:{name:'法面作業（急傾斜地）',unitPrice:500,items:[
+    {n:'法面草刈り作業（㎡単価）',perSqm:true},{n:'安全対策費（急傾斜）',u:8000},{n:'草木処分費',u:6000},{n:'現場清掃',u:2000}]},
+};
+
+let currentEstData=null;
+function loadEstimate(name,addr){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.querySelectorAll('.nav-item')[4].classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.getElementById('estCustName').value=name||'';
+  document.getElementById('estAddr').value=addr||'';
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('estCustName').value||'—';
+  const addr=document.getElementById('estAddr').value||'—';
+  const jtype=document.getElementById('estJobType').value;
+  const area=parseInt(document.getElementById('estArea').value)||1;
+  const herbicide=parseInt(document.getElementById('estHerbicide').value)||0;
+  const note=document.getElementById('estNote').value;
+  if(!jtype){alert('作業の種類を選択してください');return;}
+
+  const job=estJobs[jtype];
+  let items=job.items.map(i=>{
+    if(i.perSqm) return {n:i.n,u:job.unitPrice,qty:area,amount:job.unitPrice*area,unit:'㎡'};
+    return {n:i.n,u:i.u,qty:1,amount:i.u,unit:'式'};
+  });
+  if(herbicide) items.push({n:'除草剤散布',u:200,qty:area,amount:200*area,unit:'㎡'});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('estDocDate').textContent='発行日：'+todayStr;
+  document.getElementById('estDocCustName').textContent=cname+' 様';
+  document.getElementById('estDocAddr').textContent=addr;
+  document.getElementById('estDocExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${i.qty}${i.unit||'式'}</td><td style="text-align:right">¥${i.u.toLocaleString()}/${i.unit||'式'}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--green-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--green-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('estDocRows').innerHTML=rows;
+  document.getElementById('estDocTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('estDocNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・面積・現地状況により変動する場合があります。現地確認後に確定見積をご提示します。\n・上記金額には消費税（10%）が含まれています。';
+
+  document.getElementById('estEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('estPdfBtn').style.display='flex';
+  document.getElementById('estPrintBtn').style.display='flex';
+
+  currentEstData={cname,addr,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function downloadEstimatePDF(){
+  if(!currentEstData) return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(46,125,50);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Kusakaritai',14,12);
+  doc.setFontSize(9);
+  doc.text('Saitama Pref. | Grass Cutting / Weed Control / Vacant House Management',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(241,248,241);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(40,80,40);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname+' sama',18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,66);
+  doc.text('Address: '+currentEstData.addr,14,72);
+
+  doc.setFillColor(46,125,50);
+  doc.rect(14,78,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Work Item',16,83.5);
+  doc.text('Qty',118,83.5);
+  doc.text('Unit Price',140,83.5);
+  doc.text('Amount',192,83.5,{align:'right'});
+
+  let y=96;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(241,248,241);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text(String(item.qty)+(item.unit||''),120,y);
+    doc.text('Y'+item.u.toLocaleString(),142,y);
+    doc.text('Y'+item.amount.toLocaleString(),194,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(46,125,50);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(165,214,167);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: Valid 30 days. Final estimate after site inspection.',14,y);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+6);}
+
+  doc.setFillColor(241,248,241);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Kusakaritai  |  Saitama Prefecture  |  Grass Cutting / Weed Control / Vacant House Management',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(/\s/g,'')+'.pdf');
+}
+</script>
+</body>
+</html>

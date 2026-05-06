@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>高野塗装 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --blue:#1565c0;
+  --blue-dark:#0d2b5c;
+  --blue-light:#e8f0fe;
+  --orange:#e65100;
+  --orange-light:#fff3e0;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --red:#dc2626;
+  --gray-bg:#f4f7fe;
+  --line:#d0ddf5;
+  --gray:#5a6a80;
+  --ink:#0d2b5c;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:var(--blue-dark);color:#ffd180;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--blue-dark);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.07)}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;border-right:3px solid #ffd180}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--blue-dark)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--blue)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--blue-dark)}
+.filter-bar{display:flex;gap:8px;align-items:center}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+/* Customer table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#f8faff}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:var(--orange-light);color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.action-cell{display:flex;gap:6px}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--blue-dark);color:#fff}
+.act-mail{background:#ffd180;color:var(--blue-dark)}
+.act-est{background:var(--blue-light);color:var(--blue);border:1px solid var(--blue)}
+
+/* Tags */
+.work-tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:3px;font-weight:700}
+.tag-wall{background:#e8f0fe;color:#1565c0}
+.tag-roof{background:#e0f2f1;color:#00796b}
+.tag-spray{background:#fce4ec;color:#c62828}
+.tag-water{background:#fff3e0;color:#e65100}
+.tag-scaffold{background:#f3e5f5;color:#7b1fa2}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--blue)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--blue);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:var(--blue-dark)}
+
+/* Estimate preview */
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--blue-dark)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Estimate document */
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--blue-dark)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--blue-dark)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--blue-dark);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--gray-bg);padding:10px 12px;border-radius:4px;margin-bottom:14px}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--blue-dark);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--blue-dark);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:#ffd180}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+/* Photo page info box */
+.info-box{background:var(--blue-light);border:1px solid var(--line);border-radius:8px;padding:20px;margin-bottom:16px;font-size:13px;color:var(--blue-dark);line-height:1.8}
+.photo-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:16px}
+@media(max-width:600px){.photo-grid{grid-template-columns:repeat(2,1fr)}}
+.photo-card{background:#fff;border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.photo-placeholder{background:var(--gray-bg);height:100px;display:flex;align-items:center;justify-content:center;font-size:28px}
+.photo-info{padding:8px 10px;font-size:11px;color:var(--gray)}
+.photo-info strong{display:block;color:var(--ink);font-size:12px;margin-bottom:2px}
+
+/* モバイル対応 */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0}
+  .nav-item{padding:8px 12px;font-size:11px}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .filter-bar{flex-wrap:wrap}
+  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px}
+  .nav-item.active{border-right:none;border-bottom:3px solid #ffd180}
+  .est-layout{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ DEMO | 高野塗装様 業務管理システム（体験版）― 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🎨</div>
+      <div class="company">高野塗装</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('customers',this)">
+        <span class="ni">👥</span>顧客管理
+      </div>
+      <div class="nav-item" onclick="showPage('followup',this)">
+        <span class="ni">🔁</span>フォロー管理
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+      <div class="nav-item" onclick="showPage('photos',this)">
+        <span class="ni">📷</span>施工写真台帳
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      高野塗装<br>
+      ふじみ野市・川越市・所沢市<br>
+      外壁塗装・自社職人施工
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum">6</div>
+            <div class="klabel">🔨 今月の工事件数</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">5</div>
+            <div class="klabel">🔁 再塗装フォロー対象（10年超）</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">3</div>
+            <div class="klabel">🏗️ 足場工事予定（今月）</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">8</div>
+            <div class="klabel">📷 施工写真 未整理</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🔁 再塗装フォロー対象（施工から10年以上経過）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>施工日</th><th>施工面積</th><th>次回フォロー</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">田中 一郎 様</div><div style="font-size:11px;color:var(--gray)">ふじみ野市上福岡</div></td>
+                <td><span class="work-tag tag-wall">外壁</span> 外壁・破風塗装</td>
+                <td>2014-06-10</td>
+                <td>120㎡</td>
+                <td><span class="status-dot sd-urgent">🔴 10年11ヶ月経過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('田中 一郎')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">鈴木 商店</div><div style="font-size:11px;color:var(--gray)">川越市脇田町</div></td>
+                <td><span class="work-tag tag-wall">外壁</span><span class="work-tag tag-roof" style="margin-left:3px">屋根</span> 外壁・屋根塗装</td>
+                <td>2013-09-20</td>
+                <td>180㎡</td>
+                <td><span class="status-dot sd-urgent">🔴 11年8ヶ月経過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('鈴木商店')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">佐藤 美穂 様</div><div style="font-size:11px;color:var(--gray)">所沢市東所沢</div></td>
+                <td><span class="work-tag tag-wall">外壁</span> 外壁塗装（2色塗り分け）</td>
+                <td>2014-11-05</td>
+                <td>95㎡</td>
+                <td><span class="status-dot sd-urgent">🔴 10年6ヶ月経過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('佐藤 美穂')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🏗️ 今月の足場工事スケジュール</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>足場設置予定日</th><th>撤去予定日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">山本 建設 様</div><div style="font-size:11px;color:var(--gray)">ふじみ野市霞ヶ丘</div></td>
+                <td><span class="work-tag tag-wall">外壁</span><span class="work-tag tag-roof" style="margin-left:3px">屋根</span> 外壁・屋根全面塗装</td>
+                <td>2026-05-08</td>
+                <td>2026-05-18</td>
+                <td><span class="status-dot sd-soon">🟠 設置済み</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">高橋 様</div><div style="font-size:11px;color:var(--gray)">川越市今成</div></td>
+                <td><span class="work-tag tag-spray">吹付</span> 各種吹付工事</td>
+                <td>2026-05-14</td>
+                <td>2026-05-24</td>
+                <td><span class="status-dot sd-ok">🟢 準備中</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">伊藤 太郎 様</div><div style="font-size:11px;color:var(--gray)">所沢市くすのき台</div></td>
+                <td><span class="work-tag tag-wall">外壁</span> 外壁塗装（4回塗り）</td>
+                <td>2026-05-21</td>
+                <td>2026-06-02</td>
+                <td><span class="status-dot sd-ok">🟢 準備中</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterCust(this.value)">
+                <option value="all">すべて</option>
+                <option value="外壁">外壁塗装</option>
+                <option value="屋根">屋根塗装</option>
+                <option value="吹付">各種吹付</option>
+                <option value="水回り">水回り</option>
+              </select>
+              <input class="search-box" type="text" placeholder="お名前で検索..." oninput="searchCust(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>施工日</th><th>施工面積</th><th>次回フォロー</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Followup -->
+      <div class="page" id="page-followup">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">フォロー管理（再塗装・定期点検リマインド）</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterFollowup(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 要対応（10年超）</option>
+                <option value="soon">🟠 まもなく（8〜10年）</option>
+                <option value="ok">🟢 余裕あり</option>
+              </select>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>施工日</th><th>施工面積</th><th>次回フォロー予定</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="followupBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--blue-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">見積書作成</div>
+            <div class="form-group">
+              <label>お客様名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：田中 一郎 様"/>
+            </div>
+            <div class="form-group">
+              <label>工事の種類</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <option value="wall_s">外壁塗装（100㎡未満）</option>
+                <option value="wall_m">外壁塗装（100〜180㎡）</option>
+                <option value="wall_l">外壁塗装（180㎡超）</option>
+                <option value="roof_s">屋根塗装（50㎡未満）</option>
+                <option value="roof_m">屋根塗装（50〜100㎡）</option>
+                <option value="wall_roof">外壁＋屋根セット塗装</option>
+                <option value="spray">各種吹付工事</option>
+                <option value="scaffold">足場工事のみ</option>
+                <option value="water_bath">水回りリフォーム（浴室）</option>
+                <option value="water_kitchen">水回りリフォーム（キッチン）</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>施工面積（㎡）</label>
+                <input class="form-input" type="number" id="area" placeholder="例：120" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>塗装回数</label>
+                <select class="form-select" id="coatCount">
+                  <option value="3">3回塗り（標準）</option>
+                  <option value="4" selected>4回塗り（高品質）</option>
+                  <option value="5">5回塗り（プレミアム）</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考・特記事項</label>
+              <input class="form-input" type="text" id="note" placeholder="例：２色塗り分け、シーリング増し打ち 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="printEstimate()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左で工事内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">高野塗装</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">埼玉県ふじみ野市<br>TEL: 049-XXX-XXXX<br>自社職人による丁寧施工</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">お客様</div>
+                  <div class="to-name" id="docCustName">　　　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">件名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>工事項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Photos -->
+      <div class="page" id="page-photos">
+        <div class="info-box">
+          📷 <strong>施工写真台帳</strong> — 工事ごとの施工前・中・完了写真を管理します。<br>
+          写真はお客様への報告書や再塗装提案時の説明資料として活用できます。<br>
+          <span style="color:var(--orange);font-weight:700">⚠️ 現在8件の写真が未整理です。下記の案件に写真を登録してください。</span>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">施工写真台帳（サンプル表示）</span>
+          </div>
+          <div style="padding:16px 20px">
+            <div style="font-size:12px;font-weight:700;color:var(--gray);margin-bottom:10px">山本建設様 — 外壁・屋根全面塗装（ふじみ野市霞ヶ丘）</div>
+            <div class="photo-grid">
+              <div class="photo-card">
+                <div class="photo-placeholder">🏠</div>
+                <div class="photo-info"><strong>施工前（外壁南面）</strong>2026-05-08 撮影</div>
+              </div>
+              <div class="photo-card">
+                <div class="photo-placeholder">🏗️</div>
+                <div class="photo-info"><strong>足場設置完了</strong>2026-05-08 撮影</div>
+              </div>
+              <div class="photo-card">
+                <div class="photo-placeholder">🎨</div>
+                <div class="photo-info"><strong>下塗り施工中</strong>2026-05-10 撮影</div>
+              </div>
+              <div class="photo-card">
+                <div class="photo-placeholder">🖌️</div>
+                <div class="photo-info"><strong>中塗り1回目</strong>2026-05-12 撮影</div>
+              </div>
+              <div class="photo-card">
+                <div class="photo-placeholder">✨</div>
+                <div class="photo-info"><strong>上塗り完了</strong>2026-05-15 撮影</div>
+              </div>
+              <div class="photo-card" style="background:#fafafa;display:flex;align-items:center;justify-content:center;border:2px dashed var(--line);cursor:pointer">
+                <div style="text-align:center;padding:20px;color:var(--gray);font-size:12px">
+                  <div style="font-size:24px;margin-bottom:8px">＋</div>
+                  写真を追加
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="margin-top:0">
+          <div class="card-head">
+            <span class="card-title">写真未登録案件</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>施工日</th><th>写真状況</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">田中 一郎 様</div><div style="font-size:11px;color:var(--gray)">ふじみ野市上福岡</div></td>
+                <td>外壁・破風塗装</td>
+                <td>2014-06-10</td>
+                <td><span class="status-dot sd-urgent">🔴 未登録</span></td>
+                <td><button class="act-btn act-est">📷 登録</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">鈴木 商店</div><div style="font-size:11px;color:var(--gray)">川越市脇田町</div></td>
+                <td>外壁・屋根塗装</td>
+                <td>2013-09-20</td>
+                <td><span class="status-dot sd-urgent">🔴 未登録</span></td>
+                <td><button class="act-btn act-est">📷 登録</button></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">渡辺 様</div><div style="font-size:11px;color:var(--gray)">所沢市並木</div></td>
+                <td>外壁塗装（4回塗り）</td>
+                <td>2020-07-14</td>
+                <td><span class="status-dot sd-soon">🟠 完了写真のみ</span></td>
+                <td><button class="act-btn act-est">📷 補完</button></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',customers:'顧客管理',followup:'フォロー管理',estimate:'見積書作成',photos:'施工写真台帳'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+}
+
+const workTagMap={
+  '外壁':'<span class="work-tag tag-wall">外壁</span>',
+  '屋根':'<span class="work-tag tag-roof">屋根</span>',
+  '吹付':'<span class="work-tag tag-spray">吹付</span>',
+  '水回り':'<span class="work-tag tag-water">水回り</span>',
+  '足場':'<span class="work-tag tag-scaffold">足場</span>',
+};
+
+const customers=[
+  {name:'田中 一郎',addr:'ふじみ野市上福岡',work:'外壁・破風塗装',type:'外壁',date:'2014-06-10',area:'120㎡',next:'2024-06-10',status:'urgent'},
+  {name:'鈴木商店',addr:'川越市脇田町',work:'外壁・屋根塗装',type:'屋根',date:'2013-09-20',area:'180㎡',next:'2023-09-20',status:'urgent'},
+  {name:'佐藤 美穂',addr:'所沢市東所沢',work:'外壁塗装（2色塗り分け）',type:'外壁',date:'2014-11-05',area:'95㎡',next:'2024-11-05',status:'urgent'},
+  {name:'渡辺 様',addr:'所沢市並木',work:'外壁塗装（4回塗り）',type:'外壁',date:'2020-07-14',area:'140㎡',next:'2030-07-14',status:'soon'},
+  {name:'山本 建設',addr:'ふじみ野市霞ヶ丘',work:'外壁・屋根全面塗装',type:'外壁',date:'2026-05-08',area:'210㎡',next:'2036-05-08',status:'ok'},
+  {name:'高橋 様',addr:'川越市今成',work:'各種吹付工事',type:'吹付',date:'2026-05-14',area:'65㎡',next:'2036-05-14',status:'ok'},
+  {name:'伊藤 太郎',addr:'所沢市くすのき台',work:'外壁塗装（4回塗り）',type:'外壁',date:'2026-05-21',area:'130㎡',next:'2036-05-21',status:'ok'},
+  {name:'中村 様',addr:'ふじみ野市大井',work:'水回りリフォーム（浴室）',type:'水回り',date:'2025-03-10',area:'—',next:'2035-03-10',status:'ok'},
+];
+
+const sLabel={urgent:'🔴 再塗装時期',soon:'🟠 8〜10年',ok:'🟢 余裕あり'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+
+function renderCust(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td style="font-size:12px">${workTagMap[c.type]||''} ${c.work}</td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.area}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderCust(customers);
+
+function filterCust(v){renderCust(v==='all'?customers:customers.filter(c=>c.type===v));}
+function searchCust(v){renderCust(v?customers.filter(c=>c.name.includes(v)):customers);}
+
+function renderFollowup(list){
+  document.getElementById('followupBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td style="font-size:12px">${workTagMap[c.type]||''} ${c.work}</td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.area}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞 連絡</button>
+        <button class="act-btn act-mail">✉️ 案内</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderFollowup(customers);
+function filterFollowup(v){renderFollowup(v==='all'?customers:customers.filter(c=>c.status===v));}
+
+// 見積書データ（㎡単価あり）
+const jobs={
+  wall_s:{name:'外壁塗装（100㎡未満）',items:[
+    {n:'足場仮設工事',u:700,unit:'㎡'},{n:'高圧洗浄',u:150,unit:'㎡'},
+    {n:'シーリング打替え',u:800,unit:'m'},{n:'下塗り（浸透シーラー）',u:400,unit:'㎡'},
+    {n:'中塗り（フッ素系塗料）',u:700,unit:'㎡'},{n:'上塗り（フッ素系塗料）',u:700,unit:'㎡'},
+    {n:'付帯部塗装（破風・軒天等）',u:15000,unit:'式'},{n:'足場解体・養生撤去',u:0,unit:'込'}]},
+  wall_m:{name:'外壁塗装（100〜180㎡）',items:[
+    {n:'足場仮設工事',u:650,unit:'㎡'},{n:'高圧洗浄',u:130,unit:'㎡'},
+    {n:'シーリング打替え',u:800,unit:'m'},{n:'下塗り（プライマー）',u:380,unit:'㎡'},
+    {n:'中塗り（シリコン系塗料）',u:650,unit:'㎡'},{n:'上塗り1回目',u:650,unit:'㎡'},
+    {n:'上塗り2回目（4回塗り仕上げ）',u:350,unit:'㎡'},{n:'付帯部塗装',u:20000,unit:'式'},{n:'清掃・廃材処分',u:10000,unit:'式'}]},
+  wall_l:{name:'外壁塗装（180㎡超）',items:[
+    {n:'足場仮設工事',u:600,unit:'㎡'},{n:'高圧洗浄',u:120,unit:'㎡'},
+    {n:'下地補修・シーリング打替え',u:900,unit:'m'},{n:'下塗り',u:350,unit:'㎡'},
+    {n:'中塗り（無機系塗料）',u:800,unit:'㎡'},{n:'上塗り1回目',u:800,unit:'㎡'},
+    {n:'上塗り2回目',u:400,unit:'㎡'},{n:'付帯部塗装（大規模）',u:35000,unit:'式'},{n:'清掃・廃材処分',u:15000,unit:'式'}]},
+  roof_s:{name:'屋根塗装（50㎡未満）',items:[
+    {n:'足場仮設工事（屋根用）',u:8000,unit:'式'},{n:'高圧洗浄',u:200,unit:'㎡'},
+    {n:'棟板金・釘打ち補修',u:10000,unit:'式'},{n:'下塗り（屋根専用シーラー）',u:500,unit:'㎡'},
+    {n:'中塗り（遮熱塗料）',u:900,unit:'㎡'},{n:'上塗り（遮熱塗料）',u:900,unit:'㎡'}]},
+  roof_m:{name:'屋根塗装（50〜100㎡）',items:[
+    {n:'足場仮設工事（屋根用）',u:12000,unit:'式'},{n:'高圧洗浄',u:180,unit:'㎡'},
+    {n:'棟板金補修・コーキング',u:18000,unit:'式'},{n:'下塗り（屋根専用シーラー）',u:450,unit:'㎡'},
+    {n:'中塗り（フッ素遮熱塗料）',u:850,unit:'㎡'},{n:'上塗り（フッ素遮熱塗料）',u:850,unit:'㎡'},{n:'縁切り（タスペーサー）',u:5000,unit:'式'}]},
+  wall_roof:{name:'外壁＋屋根セット塗装',items:[
+    {n:'足場仮設工事（外壁・屋根共用）',u:600,unit:'㎡'},{n:'高圧洗浄（外壁・屋根）',u:120,unit:'㎡'},
+    {n:'外壁シーリング打替え',u:800,unit:'m'},{n:'外壁塗装（3工程）',u:1600,unit:'㎡'},
+    {n:'屋根塗装（3工程）',u:2000,unit:'㎡'},{n:'付帯部塗装一式',u:30000,unit:'式'},{n:'清掃・廃材処分',u:15000,unit:'式'}]},
+  spray:{name:'各種吹付工事',items:[
+    {n:'足場仮設工事',u:700,unit:'㎡'},{n:'養生工事',u:200,unit:'㎡'},
+    {n:'下地調整・プライマー',u:400,unit:'㎡'},{n:'吹付材施工（1回目）',u:900,unit:'㎡'},
+    {n:'吹付材施工（2回目）',u:900,unit:'㎡'},{n:'足場解体・清掃',u:0,unit:'込'}]},
+  scaffold:{name:'足場工事のみ',items:[
+    {n:'くさび式足場設置',u:700,unit:'㎡'},{n:'養生シート設置',u:150,unit:'㎡'},
+    {n:'足場解体・撤去',u:0,unit:'込み'},{n:'廃材処分・清掃',u:10000,unit:'式'}]},
+  water_bath:{name:'水回りリフォーム（浴室）',items:[
+    {n:'既設浴室解体・撤去',u:80000,unit:'式'},{n:'ユニットバス本体',u:450000,unit:'式'},
+    {n:'給排水接続工事',u:70000,unit:'式'},{n:'電気工事（換気扇・照明）',u:35000,unit:'式'},{n:'内装補修',u:40000,unit:'式'}]},
+  water_kitchen:{name:'水回りリフォーム（キッチン）',items:[
+    {n:'既設キッチン撤去処分',u:30000,unit:'式'},{n:'システムキッチン本体',u:380000,unit:'式'},
+    {n:'給排水接続工事',u:60000,unit:'式'},{n:'電気工事',u:40000,unit:'式'},{n:'内装補修',u:50000,unit:'式'}]},
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const area=parseInt(document.getElementById('area').value)||100;
+  const coatCount=parseInt(document.getElementById('coatCount').value)||4;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('工事の種類を選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=job.items.map(i=>{
+    let amount=0;
+    if(i.unit==='㎡') amount=i.u*area;
+    else if(i.unit==='m') amount=i.u*Math.round(area*0.6);
+    else if(i.unit==='込'||i.unit==='込み') amount=0;
+    else amount=i.u;
+    return{...i,amount};
+  });
+
+  // 4回塗り以上の場合は上塗り追加
+  if(coatCount>=4 && (jtype.startsWith('wall')||jtype==='wall_roof')){
+    items.push({n:'追加上塗り（高品質4回塗り仕上げ）',u:300,unit:'㎡',amount:300*area});
+  }
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 様';
+  document.getElementById('docJobName').textContent=job.name+`（${area}㎡、${coatCount}回塗り）`;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>{
+    const qtyStr=i.unit==='㎡'?area+'㎡':i.unit==='m'?Math.round(area*0.6)+'m':i.unit==='式'||i.unit==='込み'||i.unit==='込'?'1式':'1式';
+    const amtStr=i.amount>0?'¥'+i.amount.toLocaleString():'含む';
+    return`<tr><td>${i.n}</td><td style="text-align:right">${qtyStr}</td><td style="text-align:right">${i.unit==='㎡'?'¥'+i.u.toLocaleString()+'/㎡':i.unit==='m'?'¥'+i.u.toLocaleString()+'/m':i.amount>0?'¥'+i.u.toLocaleString():'—'}</td><td style="text-align:right">${amtStr}</td></tr>`;
+  }).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・施工は自社職人による丁寧な'+coatCount+'回塗り仕上げです。\n・工事完了後、施工写真と保証書を発行いたします。\n・上記金額には消費税（10%）が含まれています。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note,area,coatCount};
+}
+
+function printEstimate(){window.print();}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(13,43,92);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Takano Painting',14,12);
+  doc.setFontSize(9);
+  doc.text('Fujimino-shi, Saitama  TEL: 049-XXX-XXXX  Self-employed craftsman',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+  doc.text('Area: '+currentEstData.area+'m2  /  Coating: '+currentEstData.coatCount+' coats',14,48);
+
+  doc.setFillColor(232,240,254);
+  doc.rect(14,54,182,12,'F');
+  doc.setTextColor(13,43,92);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname+' sama',18,62);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,74);
+
+  doc.setFillColor(13,43,92);
+  doc.rect(14,80,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,85.5);
+  doc.text('Qty',115,85.5);
+  doc.text('Unit',140,85.5);
+  doc.text('Amount',185,85.5,{align:'right'});
+
+  let y=98;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(244,247,254);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    const amtStr=item.amount>0?'Y'+item.amount.toLocaleString():'incl.';
+    doc.text(amtStr,185,y,{align:'right'});
+    y+=10;
+    if(y>260){doc.addPage();y=20;}
+  });
+
+  y+=4;
+  doc.setFillColor(13,43,92);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(255,209,0);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: '+currentEstData.coatCount+'-coat finish by our own craftsmen. Photo report & warranty on completion.',14,y);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+6);}
+
+  doc.setFillColor(244,247,254);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Takano Painting  |  Fujimino-shi, Saitama  |  049-XXX-XXXX  |  Fujimino / Kawagoe / Tokorozawa',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(' ','')+'.pdf');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,774 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>山口水道工業所 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#1a237e;
+  --blue:#1976d2;
+  --blue-light:#e3f2fd;
+  --accent:#42a5f5;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --gray-bg:#f0f4fa;
+  --ink:#1a1e36;
+  --gray:#556070;
+  --line:#c5d4e8;
+  --sidebar-w:230px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:#1a237e;color:#90caf9;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0;border-bottom:2px solid #42a5f5}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:13px;font-weight:700;color:#fff;line-height:1.5}
+.sidebar-logo .tagline{font-size:10px;color:rgba(255,255,255,.45);margin-top:4px;line-height:1.5}
+.sidebar-logo .icon{font-size:24px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.3);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.07)}
+.nav-item.active{background:rgba(255,255,255,.13);color:#fff;border-right:3px solid var(--accent)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-badge{font-size:10px;background:rgba(66,165,245,.25);color:var(--accent);padding:2px 7px;border-radius:10px;margin-left:auto}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.7}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px;border:1px solid var(--line)}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line);position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--blue)}
+.kpi .knum{font-size:30px;font-weight:700;line-height:1;color:var(--navy)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.warn .knum{color:var(--orange)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px;line-height:1.5}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line);background:#fafbff}
+.card-title{font-size:14px;font-weight:700;color:var(--navy)}
+.filter-bar{display:flex;gap:8px;align-items:center}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:150px}
+
+/* Table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#f6f9ff}
+
+/* Status badges */
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.sd-wait{background:var(--blue-light);color:var(--blue)}
+
+/* Action buttons */
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--navy);color:#fff}
+.act-mail{background:var(--accent);color:#fff}
+.act-est{background:var(--blue-light);color:var(--blue)}
+
+/* Stats page */
+.stats-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:20px}
+@media(max-width:700px){.stats-grid{grid-template-columns:1fr}}
+.stat-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:16px 20px}
+.stat-card .st-title{font-size:12px;font-weight:700;color:var(--gray);margin-bottom:12px;letter-spacing:.05em}
+.stat-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px;font-size:12px}
+.stat-bar-label{width:90px;color:var(--ink);flex-shrink:0}
+.stat-bar-bg{flex:1;height:10px;background:var(--gray-bg);border-radius:5px;overflow:hidden}
+.stat-bar-fill{height:100%;border-radius:5px;background:var(--blue);transition:width .5s}
+.stat-bar-val{width:30px;text-align:right;color:var(--gray);font-weight:700}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--blue)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--navy);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:#141a66}
+
+/* Estimate preview */
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;background:#fafbff}
+.ep-title{font-size:13px;font-weight:700;color:var(--navy)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Estimate document */
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--navy)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--navy)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--navy);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--blue-light);padding:10px 12px;border-radius:4px;margin-bottom:14px;border-left:3px solid var(--blue)}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--navy);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:var(--accent)}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+/* Info chip */
+.info-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;background:var(--blue-light);color:var(--navy);padding:4px 10px;border-radius:12px;font-weight:700;margin-bottom:16px;margin-right:8px}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
+  .nav-label{display:none}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px;font-size:11px}
+  .nav-item.active{border-right:none;border-bottom:3px solid var(--accent)}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .filter-bar{flex-wrap:wrap}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .est-layout{grid-template-columns:1fr}
+  .form-row-2{grid-template-columns:1fr}
+  .stats-grid{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚠️ DEMO | 山口水道工業所様 業務管理システム（体験版）— 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">💧</div>
+      <div class="company">山口水道工業所</div>
+      <div class="tagline">創業48年｜川越市指定工事店<br>業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard', this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('repairs', this)">
+        <span class="ni">🔨</span>修理記録
+      </div>
+      <div class="nav-item" onclick="showPage('inspection', this)">
+        <span class="ni">📆</span>点検スケジュール
+        <span class="sidebar-badge">3件</span>
+      </div>
+      <div class="nav-item" onclick="showPage('estimate', this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+      <div class="nav-item" onclick="showPage('stats', this)">
+        <span class="ni">📊</span>統計レポート
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      山口水道工業所<br>
+      川越市指定工事店<br>
+      創業48年（1978年〜）<br>
+      049-XXX-XXXX
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div style="margin-bottom:14px">
+          <span class="info-chip">🏛️ 川越市指定工事店</span>
+          <span class="info-chip">🎖️ 創業48年</span>
+        </div>
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum">18</div>
+            <div class="klabel">🔨 今月の修理件数</div>
+          </div>
+          <div class="kpi warn">
+            <div class="knum">3</div>
+            <div class="klabel">📆 定期点検予定（今月）</div>
+          </div>
+          <div class="kpi">
+            <div class="knum">42</div>
+            <div class="klabel">🔁 リピーター顧客数</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">2</div>
+            <div class="klabel">⚠️ 未完了案件</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⚠️ 未完了案件・対応が必要なお客様</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>修理内容</th><th>修理日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">高橋 誠一 様</div><div style="font-size:11px;color:var(--gray)">川越市菅原町2丁目</div></td>
+                <td>トイレ詰まり修理（部品発注中）</td>
+                <td>2026-04-28</td>
+                <td><span class="status-dot sd-urgent">⚠️ 部品待ち</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('高橋 誠一')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">小林 幸江 様</div><div style="font-size:11px;color:var(--gray)">川越市元町1丁目</div></td>
+                <td>水道管水漏れ修理（養生中）</td>
+                <td>2026-05-01</td>
+                <td><span class="status-dot sd-soon">🟠 確認待ち</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('小林 幸江')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📆 今月の定期点検予定（3件）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>点検内容</th><th>点検予定日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">松本 義男 様</div><div style="font-size:11px;color:var(--gray)">川越市久保町3丁目</div></td>
+                <td>給水設備定期点検（年1回）</td>
+                <td>2026-05-15</td>
+                <td><span class="status-dot sd-wait">📆 点検予定</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">西村 春子 様</div><div style="font-size:11px;color:var(--gray)">川越市郭町4丁目</div></td>
+                <td>排水設備定期点検</td>
+                <td>2026-05-20</td>
+                <td><span class="status-dot sd-wait">📆 点検予定</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">吉田 和男 様</div><div style="font-size:11px;color:var(--gray)">川越市幸町5丁目</div></td>
+                <td>水道メーター周辺点検</td>
+                <td>2026-05-28</td>
+                <td><span class="status-dot sd-ok">🟢 連絡済</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Repairs -->
+      <div class="page" id="page-repairs">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🔨 修理記録</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterRepairs(this.value)">
+                <option value="all">すべて</option>
+                <option value="done">🟢 修理完了</option>
+                <option value="inspect">📆 点検予定</option>
+                <option value="wait">🟠 連絡待ち</option>
+              </select>
+              <input class="search-box" type="text" placeholder="お名前で検索..." oninput="searchRepairs(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>修理内容</th><th>修理日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="repairBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Inspection -->
+      <div class="page" id="page-inspection">
+        <div class="card" style="margin-bottom:20px">
+          <div class="card-head">
+            <span class="card-title">📆 定期点検スケジュール管理</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>点検月</th><th>お客様</th><th>点検内容</th><th>前回点検日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td style="font-weight:700;color:var(--orange)">2026年5月</td>
+                <td><div style="font-weight:700">松本 義男 様</div></td>
+                <td>給水設備定期点検（年1回）</td>
+                <td>2025-05-12</td>
+                <td><span class="status-dot sd-wait">📆 点検予定</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td style="font-weight:700;color:var(--orange)">2026年5月</td>
+                <td><div style="font-weight:700">西村 春子 様</div></td>
+                <td>排水設備定期点検</td>
+                <td>2025-05-18</td>
+                <td><span class="status-dot sd-wait">📆 点検予定</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td style="font-weight:700;color:var(--orange)">2026年5月</td>
+                <td><div style="font-weight:700">吉田 和男 様</div></td>
+                <td>水道メーター周辺点検</td>
+                <td>2025-05-25</td>
+                <td><span class="status-dot sd-ok">🟢 連絡済</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td>2026年6月</td>
+                <td><div style="font-weight:700">加藤 武志 様</div></td>
+                <td>給排水設備総点検</td>
+                <td>2025-06-10</td>
+                <td><span class="status-dot sd-ok">🟢 日程確認済</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+              <tr>
+                <td>2026年7月</td>
+                <td><div style="font-weight:700">山崎 則子 様</div></td>
+                <td>蛇口・水栓年次点検</td>
+                <td>2025-07-03</td>
+                <td><span class="status-dot sd-ok">🟢 未連絡</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 確認</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">📋 見積書作成</div>
+            <div class="form-group">
+              <label>お客様名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：高橋 誠一"/>
+            </div>
+            <div class="form-group">
+              <label>修理・工事の種類</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <option value="tsumari_toilet">トイレ詰まり修理</option>
+                <option value="tsumari_kitchen">キッチン・洗面詰まり修理</option>
+                <option value="tsumari_drain">排水管高圧洗浄</option>
+                <option value="mizumori_pipe">水道管水漏れ修理</option>
+                <option value="mizumori_suisen">蛇口・水栓水漏れ修理</option>
+                <option value="mizumori_toilet">トイレ水漏れ修理</option>
+                <option value="pakkin">パッキン・部品交換</option>
+                <option value="suisen_koe">水栓金具交換工事</option>
+                <option value="meter">水道メーター工事</option>
+                <option value="inspection">定期点検（給排水設備）</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>箇所数</label>
+                <input class="form-input" type="number" id="qty" placeholder="例：1" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>対応種別</label>
+                <select class="form-select" id="floor">
+                  <option value="1">通常対応</option>
+                  <option value="2">緊急対応（夜間・休日）</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="note" placeholder="例：築年数・マンション・戸建 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左で修理内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">山口水道工業所</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">埼玉県川越市〇〇2丁目2-2<br>TEL: 049-XXX-XXXX　川越市指定工事店<br>創業48年｜つまり・水漏れ・修理専門</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">お客様</div>
+                  <div class="to-name" id="docCustName">　　　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">件名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>修理・工事項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats -->
+      <div class="page" id="page-stats">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="st-title">🔨 修理種別（今月）</div>
+            <div class="stat-bar-row"><span class="stat-bar-label">詰まり修理</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:70%"></div></div><span class="stat-bar-val">7件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">水漏れ修理</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:50%"></div></div><span class="stat-bar-val">5件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">蛇口交換</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:30%"></div></div><span class="stat-bar-val">3件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">パッキン交換</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:20%"></div></div><span class="stat-bar-val">2件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">その他</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:10%"></div></div><span class="stat-bar-val">1件</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="st-title">📞 顧客種別（累計）</div>
+            <div class="stat-bar-row"><span class="stat-bar-label">リピーター</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:80%;background:#16a34a"></div></div><span class="stat-bar-val">42</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">新規顧客</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:25%;background:#0277bd"></div></div><span class="stat-bar-val">13</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">紹介顧客</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:15%;background:#ea580c"></div></div><span class="stat-bar-val">8</span></div>
+          </div>
+          <div class="stat-card">
+            <div class="st-title">📆 月別修理件数（直近6ヶ月）</div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2025年12月</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:60%"></div></div><span class="stat-bar-val">14件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2026年1月</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:70%"></div></div><span class="stat-bar-val">16件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2026年2月</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:55%"></div></div><span class="stat-bar-val">13件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2026年3月</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:75%"></div></div><span class="stat-bar-val">18件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2026年4月</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:65%"></div></div><span class="stat-bar-val">15件</span></div>
+            <div class="stat-bar-row"><span class="stat-bar-label">2026年5月（今月）</span><div class="stat-bar-bg"><div class="stat-bar-fill" style="width:75%"></div></div><span class="stat-bar-val">18件</span></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📊 今月の対応サマリー</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>指標</th><th>今月</th><th>先月</th><th>前年同月</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>修理件数（合計）</td><td style="font-weight:700;color:var(--navy)">18件</td><td>15件</td><td>16件</td></tr>
+              <tr><td>うち緊急対応</td><td style="font-weight:700;color:var(--orange)">4件</td><td>3件</td><td>5件</td></tr>
+              <tr><td>定期点検実施数</td><td style="font-weight:700">3件</td><td>2件</td><td>3件</td></tr>
+              <tr><td>新規顧客数</td><td style="font-weight:700;color:var(--green)">3名</td><td>2名</td><td>2名</td></tr>
+              <tr><td>リピーター対応率</td><td style="font-weight:700;color:var(--navy)">68%</td><td>65%</td><td>62%</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+// ページ切替
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  const titles={
+    dashboard:'ダッシュボード',
+    repairs:'修理記録',
+    inspection:'点検スケジュール',
+    estimate:'見積書作成',
+    stats:'統計レポート'
+  };
+  document.getElementById('pageTitle').textContent=titles[id];
+}
+
+// 修理記録データ
+const repairs=[
+  {name:'高橋 誠一',addr:'川越市菅原町2丁目',work:'トイレ詰まり修理（部品発注中）',date:'2026-04-28',status:'wait'},
+  {name:'小林 幸江',addr:'川越市元町1丁目',work:'水道管水漏れ修理（養生中）',date:'2026-05-01',status:'wait'},
+  {name:'松本 義男',addr:'川越市久保町3丁目',work:'給水設備定期点検',date:'2026-03-15',status:'inspect'},
+  {name:'西村 春子',addr:'川越市郭町4丁目',work:'排水詰まり修理',date:'2026-04-10',status:'done'},
+  {name:'吉田 和男',addr:'川越市幸町5丁目',work:'蛇口水漏れ修理・パッキン交換',date:'2026-04-15',status:'done'},
+  {name:'加藤 武志',addr:'川越市仙波町6丁目',work:'キッチン排水詰まり修理',date:'2026-04-20',status:'done'},
+  {name:'山崎 則子',addr:'川越市六軒町7丁目',work:'トイレウォシュレット交換',date:'2026-04-25',status:'done'},
+  {name:'木下 達也',addr:'川越市三光町8丁目',work:'洗面台水漏れ修理',date:'2026-05-03',status:'done'},
+];
+
+const rLabel={done:'🟢 修理完了',inspect:'📆 点検予定',wait:'🟠 連絡待ち'};
+const rClass={done:'sd-ok',inspect:'sd-wait',wait:'sd-soon'};
+
+function renderRepairs(list){
+  document.getElementById('repairBody').innerHTML=list.map(r=>`
+    <tr>
+      <td><div style="font-weight:700">${r.name} 様</div><div style="font-size:11px;color:var(--gray)">${r.addr}</div></td>
+      <td style="font-size:12px">${r.work}</td>
+      <td style="font-size:12px">${r.date}</td>
+      <td><span class="status-dot ${rClass[r.status]}">${rLabel[r.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${r.name}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderRepairs(repairs);
+
+function filterRepairs(v){
+  renderRepairs(v==='all'?repairs:repairs.filter(r=>r.status===v));
+}
+function searchRepairs(v){
+  renderRepairs(v?repairs.filter(r=>r.name.includes(v)):repairs);
+}
+
+// 見積書データ
+const jobs={
+  tsumari_toilet:{name:'トイレ詰まり修理',items:[
+    {n:'現地調査・診断費',u:5000},
+    {n:'詰まり除去作業（ローポンプ）',u:8000},
+    {n:'詰まり除去作業（ハイポンプ）',u:5000},
+    {n:'動作確認・清掃',u:2000}]},
+  tsumari_kitchen:{name:'キッチン・洗面詰まり修理',items:[
+    {n:'現地調査・診断費',u:5000},
+    {n:'詰まり除去作業',u:10000},
+    {n:'排水確認・清掃',u:2000}]},
+  tsumari_drain:{name:'排水管高圧洗浄',items:[
+    {n:'現地調査・診断費',u:5000},
+    {n:'高圧洗浄作業（専用機器使用）',u:20000},
+    {n:'排水確認・洗浄後チェック',u:3000}]},
+  mizumori_pipe:{name:'水道管水漏れ修理',items:[
+    {n:'現地調査・漏水箇所特定',u:8000},
+    {n:'配管修理工事',u:18000},
+    {n:'漏れ確認・動作確認',u:3000}]},
+  mizumori_suisen:{name:'蛇口・水栓水漏れ修理',items:[
+    {n:'現地調査・診断費',u:5000},
+    {n:'パッキン・カートリッジ交換',u:5000},
+    {n:'蛇口本体交換（必要な場合）',u:10000},
+    {n:'動作確認・漏れ確認',u:2000}]},
+  mizumori_toilet:{name:'トイレ水漏れ修理',items:[
+    {n:'現地調査・診断費',u:5000},
+    {n:'フロートバルブ・ボールタップ交換',u:8000},
+    {n:'配管接続・動作確認',u:3000}]},
+  pakkin:{name:'パッキン・部品交換',items:[
+    {n:'現地調査費',u:3000},
+    {n:'パッキン・部品代',u:2000},
+    {n:'交換作業・動作確認',u:5000}]},
+  suisen_koe:{name:'水栓金具交換工事',items:[
+    {n:'水栓金具本体（標準品）',u:12000},
+    {n:'既設取外し・新規取付工事',u:8000},
+    {n:'動作確認・漏れ確認',u:2000}]},
+  meter:{name:'水道メーター工事',items:[
+    {n:'水道メーター本体',u:8000},
+    {n:'メーター交換工事',u:10000},
+    {n:'動作確認・記録',u:2000}]},
+  inspection:{name:'定期点検（給排水設備）',items:[
+    {n:'点検作業費（給水設備）',u:8000},
+    {n:'点検作業費（排水設備）',u:6000},
+    {n:'点検報告書作成',u:3000}]},
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const qty=parseInt(document.getElementById('qty').value)||1;
+  const urgency=parseInt(document.getElementById('floor').value)||1;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('修理・工事の種類を選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=[...job.items.map(i=>({...i,amount:i.u*qty}))];
+  if(urgency===2) items.push({n:'緊急対応割増（夜間・休日）',u:8000,amount:8000});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 様';
+  document.getElementById('docJobName').textContent=job.name;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${qty}式</td><td style="text-align:right">¥${i.u.toLocaleString()}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・着工日程はご相談ください。\n・上記金額には消費税（10%）が含まれています。\n・緊急対応・夜間・休日対応は別途割増料金が発生します。\n・川越市指定工事店として適正な工事を行います。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(26,35,126);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Yamaguchi Suido Kogyosho',14,12);
+  doc.setFontSize(9);
+  doc.text('Est.1978 | Kawagoe Designated Plumbing Contractor  TEL: 049-XXX-XXXX',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(227,242,253);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(26,35,126);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname+' sama',18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,68);
+
+  doc.setFillColor(26,35,126);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,79.5);
+  doc.text('Qty',130,79.5);
+  doc.text('Unit',150,79.5);
+  doc.text('Amount',185,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(240,244,250);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text('1',133,y);
+    doc.text('Y'+item.u.toLocaleString(),152,y);
+    doc.text('Y'+item.amount.toLocaleString(),196,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(26,35,126);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(66,165,245);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: This estimate is valid for 30 days from the date of issue.',14,y);
+  doc.text('Kawagoe Designated Plumbing Contractor (Est.1978)',14,y+6);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+12);}
+
+  doc.setFillColor(227,242,253);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Yamaguchi Suido Kogyosho  |  Kawagoe-shi  |  049-XXX-XXXX  |  Est.1978',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(' ','')+'.pdf');
+}
+</script>
+</body>
+</html>

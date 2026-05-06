@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ヤマダ産業 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --green:#2e7d32;
+  --green-mid:#43a047;
+  --green-light:#e8f5e9;
+  --dark:#455a64;
+  --dark2:#37474f;
+  --red:#dc2626;
+  --orange:#ea580c;
+  --yellow:#f59e0b;
+  --blue:#1565c0;
+  --blue-light:#e3f0fc;
+  --gray-bg:#f4f6f4;
+  --ink:#1a2a1a;
+  --gray:#5a6070;
+  --line:#d6e4d6;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:#1b5e20;color:#a5d6a7;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--dark2);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid #a5d6a7}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--green)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* KPI Cards */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--green)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi.blue .knum{color:var(--blue)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--green)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+/* Table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--green-light);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--dark);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#f1f8f1}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--dark2);color:#fff}
+.act-mail{background:var(--green-light);color:var(--green);border:1px solid var(--line)}
+.act-est{background:var(--blue-light);color:var(--blue)}
+.act-manifest{background:#fff3e0;color:#e65100;border:1px solid #ffe0b2}
+
+/* Type badge */
+.type-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:3px;display:inline-block}
+.tb-waste{background:#e8f5e9;color:#2e7d32}
+.tb-heir{background:#fce4ec;color:#c62828}
+.tb-conf{background:#e3f2fd;color:#1565c0}
+.tb-bm{background:#f3e5f5;color:#7b1fa2}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--green)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--green);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:#1b5e20}
+
+/* Estimate preview */
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--green)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Estimate document */
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--green)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--green)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--dark);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--green-light);padding:10px 12px;border-radius:4px;margin-bottom:14px;border-left:3px solid var(--green)}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--green);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--green);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:#a5d6a7}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+/* Schedule page */
+.sched-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;margin-top:4px}
+.sched-item{background:#fff;border-radius:8px;border:1px solid var(--line);padding:14px 16px}
+.sched-date{font-size:11px;color:var(--gray);margin-bottom:6px}
+.sched-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.sched-detail{font-size:12px;color:var(--gray)}
+.sched-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;display:inline-block;margin-top:6px}
+.sb-waste{background:#e8f5e9;color:#2e7d32}
+.sb-heir{background:#fce4ec;color:#c62828}
+.sb-conf{background:#e3f2fd;color:#1565c0}
+.sb-bm{background:#f3e5f5;color:#7b1fa2}
+
+/* Manifest page */
+.mf-table{width:100%;border-collapse:collapse}
+.mf-table th{background:var(--dark2);color:#fff;padding:10px 14px;text-align:left;font-size:11px;font-weight:700;letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.mf-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.mf-table tr:last-child td{border:none}
+.mf-table tr:hover td{background:#f1f8f1}
+.mf-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;display:inline-block}
+.mfs-done{background:#e8f5e9;color:#2e7d32}
+.mfs-pending{background:#fff7ed;color:#e65100}
+.mfs-issue{background:#fef2f2;color:var(--red)}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0;display:flex;flex-direction:row;overflow-x:auto}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px;font-size:11px}
+  .nav-item.active{border-right:none;border-bottom:3px solid #a5d6a7}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .kpi .knum{font-size:20px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table,.mf-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td,.mf-table th,.mf-table td{padding:7px 8px;font-size:11px}
+  .action-cell{flex-wrap:wrap}
+  .est-layout{grid-template-columns:1fr}
+  .form-row-2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">♻️ DEMO | ヤマダ産業様 業務管理システム（体験版）— 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">♻️</div>
+      <div class="company">ヤマダ産業</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('customers',this)">
+        <span class="ni">👥</span>顧客管理
+      </div>
+      <div class="nav-item" onclick="showPage('schedule',this)">
+        <span class="ni">📅</span>収集スケジュール
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+      <div class="nav-item" onclick="showPage('manifest',this)">
+        <span class="ni">📄</span>マニフェスト管理
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      ヤマダ産業<br>
+      廃棄物収集・遺品整理<br>
+      機密文書リサイクル
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum">18</div>
+            <div class="klabel">♻️ 今月の収集件数</div>
+          </div>
+          <div class="kpi blue">
+            <div class="knum">12</div>
+            <div class="klabel">🤝 定期契約顧客数</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">6</div>
+            <div class="klabel">📅 今週の収集スケジュール</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">3</div>
+            <div class="klabel">📦 機密文書回収予定</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⚠️ 要対応・フォローアップ案件</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>顧客名</th><th>サービス種別</th><th>前回収集日</th><th>次回予定</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">株式会社 佐々木商店</div><div style="font-size:11px;color:var(--gray)">定期契約・産廃</div></td>
+                <td><span class="type-badge tb-waste">廃棄物</span> 産業廃棄物 定期収集</td>
+                <td>2025-03-25</td>
+                <td><span class="status-dot sd-urgent">🔴 2025-04-25 超過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-manifest">📄 マニフェスト</button><button class="act-btn act-est" onclick="loadEstimate('佐々木商店')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">山田 正志 様</div><div style="font-size:11px;color:var(--gray)">遺品整理・進捗確認</div></td>
+                <td><span class="type-badge tb-heir">遺品整理</span> 2LDK 遺品整理</td>
+                <td>—</td>
+                <td><span class="status-dot sd-urgent">🔴 現地確認待ち</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-est" onclick="loadEstimate('山田 正志')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🟠 今週対応予定の案件</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>顧客名</th><th>サービス種別</th><th>前回収集日</th><th>次回予定</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">○○法律事務所</div><div style="font-size:11px;color:var(--gray)">定期契約・機密文書</div></td>
+                <td><span class="type-badge tb-conf">機密文書</span> 月次 定期回収</td>
+                <td>2025-04-08</td>
+                <td><span class="status-dot sd-soon">🟠 2025-05-08</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-manifest">📄 証明書</button><button class="act-btn act-est" onclick="loadEstimate('法律事務所')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">△△クリニック</div><div style="font-size:11px;color:var(--gray)">定期契約・産廃</div></td>
+                <td><span class="type-badge tb-waste">廃棄物</span> 医療廃棄物 定期収集</td>
+                <td>2025-04-10</td>
+                <td><span class="status-dot sd-soon">🟠 2025-05-10</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 連絡</button><button class="act-btn act-manifest">📄 マニフェスト</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客管理</span>
+            <div class="filter-bar">
+              <select class="f-select" id="typeFilter" onchange="filterAndSearch()">
+                <option value="all">すべてのサービス</option>
+                <option value="廃棄物">♻️ 廃棄物収集</option>
+                <option value="遺品整理">🏠 遺品整理</option>
+                <option value="機密文書">📦 機密文書</option>
+                <option value="ビルメン">🔧 ビルメンテナンス</option>
+              </select>
+              <input class="search-box" type="text" id="nameSearch" placeholder="顧客名で検索..." oninput="filterAndSearch()"/>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>顧客名</th><th>サービス種別</th><th>前回収集日</th><th>次回予定</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Schedule -->
+      <div class="page" id="page-schedule">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 収集スケジュール（今月）</span>
+          </div>
+          <div style="padding:16px">
+            <div class="sched-grid" id="schedGrid"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--green);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">見積書作成</div>
+            <div class="form-group">
+              <label>顧客名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：株式会社 佐々木商店"/>
+            </div>
+            <div class="form-group">
+              <label>サービス種別</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <option value="waste_gen">一般廃棄物 収集運搬（単発）</option>
+                <option value="waste_ind">産業廃棄物 収集運搬（単発）</option>
+                <option value="waste_reg">廃棄物収集 定期契約（月次）</option>
+                <option value="heir_1k">遺品整理（1K・1R）</option>
+                <option value="heir_2ldk">遺品整理（2LDK〜3LDK）</option>
+                <option value="heir_house">遺品整理（一戸建て）</option>
+                <option value="conf_single">機密文書 スポット回収</option>
+                <option value="conf_reg">機密文書 定期回収（月次）</option>
+                <option value="conf_destroy">機密文書 即日溶解処理</option>
+                <option value="bm_clean">ビルメンテナンス 清掃（月次）</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>数量・回数</label>
+                <input class="form-input" type="number" id="qty" placeholder="例：1" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>エリア</label>
+                <select class="form-select" id="area">
+                  <option value="1">市内（標準）</option>
+                  <option value="2">市外（追加あり）</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="note" placeholder="例：大型家具あり、鍵預かり希望 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="printEstimate()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左でサービス内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">ヤマダ産業</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">廃棄物収集運搬・遺品整理・機密文書リサイクル<br>ビルメンテナンス</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">顧客名</div>
+                  <div class="to-name" id="docCustName">　　　　　 御中</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">件名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>サービス項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Manifest -->
+      <div class="page" id="page-manifest">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📄 マニフェスト管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterManifest(this.value)">
+                <option value="all">すべて</option>
+                <option value="done">✅ 完了</option>
+                <option value="pending">🕐 処理中</option>
+                <option value="issue">⚠️ 要確認</option>
+              </select>
+            </div>
+          </div>
+          <table class="mf-table" id="mfTable">
+            <thead>
+              <tr><th>マニフェスト番号</th><th>顧客名</th><th>廃棄物種別</th><th>収集日</th><th>処分事業者</th><th>最終確認</th><th>状態</th></tr>
+            </thead>
+            <tbody id="mfBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+// ページ切替
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',customers:'顧客管理',schedule:'収集スケジュール',estimate:'見積書作成',manifest:'マニフェスト管理'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+}
+
+// 顧客データ
+const customers=[
+  {name:'株式会社 佐々木商店',sub:'定期契約・産廃',type:'廃棄物',work:'産業廃棄物 定期収集',date:'2025-03-25',next:'2025-04-25',status:'urgent'},
+  {name:'山田 正志 様',sub:'遺品整理・進捗確認',type:'遺品整理',work:'2LDK 遺品整理',date:'—',next:'現地確認待ち',status:'urgent'},
+  {name:'○○法律事務所',sub:'定期契約・機密文書',type:'機密文書',work:'月次 定期回収',date:'2025-04-08',next:'2025-05-08',status:'soon'},
+  {name:'△△クリニック',sub:'定期契約・産廃',type:'廃棄物',work:'医療廃棄物 定期収集',date:'2025-04-10',next:'2025-05-10',status:'soon'},
+  {name:'□□不動産管理',sub:'定期契約・清掃',type:'ビルメン',work:'ビルメンテナンス 清掃',date:'2025-04-15',next:'2025-05-15',status:'ok'},
+  {name:'鈴木 光男 様',sub:'遺品整理完了',type:'遺品整理',work:'一戸建て 遺品整理',date:'2025-03-20',next:'対応完了',status:'ok'},
+  {name:'☆☆会計事務所',sub:'定期契約・機密文書',type:'機密文書',work:'隔月 定期回収',date:'2025-03-12',next:'2025-05-12',status:'ok'},
+  {name:'◇◇製造株式会社',sub:'定期契約・産廃',type:'廃棄物',work:'産業廃棄物 月次収集',date:'2025-04-20',next:'2025-05-20',status:'ok'},
+];
+
+const sLabel={urgent:'🔴 要対応',soon:'🟠 今週対応',ok:'🟢 予定内'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+const typeClass={廃棄物:'tb-waste',遺品整理:'tb-heir',機密文書:'tb-conf',ビルメン:'tb-bm'};
+
+function renderCustomers(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name}</div><div style="font-size:11px;color:var(--gray)">${c.sub}</div></td>
+      <td><span class="type-badge ${typeClass[c.type]||'tb-waste'}">${c.type}</span> <span style="font-size:12px">${c.work}</span></td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-mail">✉️</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋 見積</button>
+        ${c.type==='廃棄物'?'<button class="act-btn act-manifest">📄 MF</button>':''}
+      </div></td>
+    </tr>`).join('');
+}
+renderCustomers(customers);
+
+function filterAndSearch(){
+  const tv=document.getElementById('typeFilter').value;
+  const sv=document.getElementById('nameSearch').value;
+  let list=customers;
+  if(tv!=='all') list=list.filter(c=>c.type===tv);
+  if(sv) list=list.filter(c=>c.name.includes(sv));
+  renderCustomers(list);
+}
+
+// スケジュールデータ
+const schedItems=[
+  {date:'5月7日（水）',name:'株式会社 佐々木商店',detail:'産業廃棄物 定期収集（月次）',type:'廃棄物'},
+  {date:'5月8日（木）',name:'○○法律事務所',detail:'機密文書 月次 定期回収',type:'機密文書'},
+  {date:'5月9日（金）',name:'田中 様（新規）',detail:'遺品整理 現地確認・お見積り',type:'遺品整理'},
+  {date:'5月10日（土）',name:'△△クリニック',detail:'医療廃棄物 定期収集',type:'廃棄物'},
+  {date:'5月13日（火）',name:'□□不動産管理',detail:'ビルメン 清掃',type:'ビルメン'},
+  {date:'5月15日（木）',name:'◇◇製造株式会社',detail:'産業廃棄物 月次収集',type:'廃棄物'},
+  {date:'5月20日（火）',name:'☆☆会計事務所',detail:'機密文書 隔月 定期回収',type:'機密文書'},
+  {date:'5月22日（木）',name:'新規：伊藤 様',detail:'遺品整理 1K 作業',type:'遺品整理'},
+];
+const schedTypeClass={廃棄物:'sb-waste',遺品整理:'sb-heir',機密文書:'sb-conf',ビルメン:'sb-bm'};
+document.getElementById('schedGrid').innerHTML=schedItems.map(i=>`
+  <div class="sched-item">
+    <div class="sched-date">📅 ${i.date}</div>
+    <div class="sched-name">${i.name}</div>
+    <div class="sched-detail">${i.detail}</div>
+    <span class="sched-badge ${schedTypeClass[i.type]||'sb-waste'}">${i.type}</span>
+  </div>`).join('');
+
+// マニフェストデータ
+const manifests=[
+  {no:'MF-2025-0421',client:'株式会社 佐々木商店',waste:'プラスチック類・金属くず',date:'2025-04-25',handler:'○○処分会社',confirm:'未確認',status:'pending'},
+  {no:'MF-2025-0410',client:'△△クリニック',waste:'感染性廃棄物',date:'2025-04-10',handler:'医療廃棄物処理○○',confirm:'2025-04-18',status:'done'},
+  {no:'MF-2025-0401',client:'◇◇製造株式会社',waste:'廃プラスチック・廃油',date:'2025-04-01',handler:'○○処分会社',confirm:'2025-04-10',status:'done'},
+  {no:'MF-2025-0325',client:'株式会社 佐々木商店',waste:'金属くず・ガラスくず',date:'2025-03-25',handler:'○○処分会社',confirm:'未確認',status:'issue'},
+  {no:'MF-2025-0320',client:'△△クリニック',waste:'感染性廃棄物',date:'2025-03-20',handler:'医療廃棄物処理○○',confirm:'2025-03-28',status:'done'},
+];
+const mfStatusLabel={done:'✅ 完了',pending:'🕐 処理中',issue:'⚠️ 要確認'};
+const mfStatusClass={done:'mfs-done',pending:'mfs-pending',issue:'mfs-issue'};
+
+function renderManifest(list){
+  document.getElementById('mfBody').innerHTML=list.map(m=>`
+    <tr>
+      <td style="font-size:12px;font-weight:700;color:var(--dark)">${m.no}</td>
+      <td style="font-size:12px">${m.client}</td>
+      <td style="font-size:12px">${m.waste}</td>
+      <td style="font-size:12px">${m.date}</td>
+      <td style="font-size:12px">${m.handler}</td>
+      <td style="font-size:12px">${m.confirm}</td>
+      <td><span class="mf-status ${mfStatusClass[m.status]}">${mfStatusLabel[m.status]}</span></td>
+    </tr>`).join('');
+}
+renderManifest(manifests);
+
+function filterManifest(v){
+  renderManifest(v==='all'?manifests:manifests.filter(m=>m.status===v));
+}
+
+// 見積書データ
+const jobs={
+  waste_gen:{name:'一般廃棄物 収集運搬（単発）',items:[
+    {n:'収集運搬基本料',u:8000},{n:'処分費用（一般廃棄物）',u:5000},
+    {n:'運搬車両・人件費',u:6000},{n:'マニフェスト発行・管理',u:1000}]},
+  waste_ind:{name:'産業廃棄物 収集運搬（単発）',items:[
+    {n:'収集運搬基本料',u:12000},{n:'処分費用（産業廃棄物）',u:8000},
+    {n:'運搬車両・人件費',u:8000},{n:'マニフェスト発行・管理',u:2000}]},
+  waste_reg:{name:'廃棄物収集 定期契約（月次）',items:[
+    {n:'月次収集運搬費',u:20000},{n:'処分費用（月次）',u:10000},
+    {n:'マニフェスト管理（月次）',u:3000},{n:'定期契約割引',u:-3000}]},
+  heir_1k:{name:'遺品整理（1K・1R）',items:[
+    {n:'作業基本料',u:30000},{n:'不用品回収・処分費',u:20000},
+    {n:'清掃・消臭作業',u:10000},{n:'貴重品調査・梱包',u:5000}]},
+  heir_2ldk:{name:'遺品整理（2LDK〜3LDK）',items:[
+    {n:'作業基本料',u:60000},{n:'不用品回収・処分費',u:40000},
+    {n:'大型家具・家電解体',u:15000},{n:'清掃・消臭作業',u:15000},{n:'貴重品調査・梱包',u:5000}]},
+  heir_house:{name:'遺品整理（一戸建て）',items:[
+    {n:'作業基本料',u:100000},{n:'不用品回収・処分費',u:70000},
+    {n:'大型家具・家電解体',u:20000},{n:'清掃・消臭作業',u:20000},{n:'貴重品調査・梱包',u:8000}]},
+  conf_single:{name:'機密文書 スポット回収',items:[
+    {n:'回収基本料',u:5000},{n:'溶解処理費（箱数×）',u:2000},
+    {n:'溶解証明書発行',u:1000}]},
+  conf_reg:{name:'機密文書 定期回収（月次）',items:[
+    {n:'月次回収費',u:8000},{n:'溶解処理費（月次）',u:5000},
+    {n:'溶解証明書発行（月次）',u:1000},{n:'定期契約割引',u:-1000}]},
+  conf_destroy:{name:'機密文書 即日溶解処理',items:[
+    {n:'即日対応料',u:10000},{n:'溶解処理費',u:8000},
+    {n:'立会い溶解証明書',u:3000}]},
+  bm_clean:{name:'ビルメンテナンス 清掃（月次）',items:[
+    {n:'共用部清掃費（月次）',u:30000},{n:'廃棄物回収・処理',u:8000},
+    {n:'消耗品費',u:3000},{n:'報告書作成',u:2000}]},
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const qty=parseInt(document.getElementById('qty').value)||1;
+  const area=parseInt(document.getElementById('area').value)||1;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('サービス種別を選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=[...job.items.map(i=>({...i,amount:i.u*qty}))];
+  if(area===2) items.push({n:'市外対応追加料金',u:5000,amount:5000});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 御中';
+  document.getElementById('docJobName').textContent=job.name;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${qty}回</td><td style="text-align:right">¥${i.u.toLocaleString()}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・サービス開始日程はご相談ください。\n・上記金額には消費税（10%）が含まれています。\n・廃棄物処理については法令に基づきマニフェストを発行します。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function printEstimate(){window.print();}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(46,125,50);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Yamada Sangyo',14,12);
+  doc.setFontSize(9);
+  doc.text('Waste Collection / Inheritance Clearance / Confidential Doc Recycling',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(232,245,233);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(40,80,40);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname,18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,68);
+
+  doc.setFillColor(46,125,50);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,79.5);
+  doc.text('Qty',130,79.5);
+  doc.text('Unit',150,79.5);
+  doc.text('Amount',185,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(249,252,249);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text('1',133,y);
+    doc.text('Y'+item.u.toLocaleString(),152,y);
+    doc.text('Y'+item.amount.toLocaleString(),196,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(46,125,50);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(165,214,167);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: This estimate is valid for 30 days from the date of issue.',14,y);
+  doc.text('Manifests will be issued in accordance with waste disposal laws.',14,y+6);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+12);}
+
+  doc.setFillColor(244,246,244);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Yamada Sangyo  |  Waste Collection / Inheritance Clearance / Confidential Doc Recycling / Building Maintenance',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(/\s/g,'')+'.pdf');
+}
+</script>
+</body>
+</html>

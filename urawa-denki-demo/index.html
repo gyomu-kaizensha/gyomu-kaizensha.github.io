@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>浦和電機 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --navy:#0d2b5c;
+  --blue:#1565c0;
+  --blue-light:#e3f0fc;
+  --yellow:#ffc107;
+  --yellow-bg:#fff8e1;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --gray-bg:#f3f4f8;
+  --ink:#1a1a2e;
+  --gray:#5a6070;
+  --line:#dde3ea;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* Demo banner */
+.demo-bar{background:#0d2b5c;color:#ffc107;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+/* App shell */
+.app{display:flex;flex:1;overflow:hidden}
+
+/* Sidebar */
+.sidebar{width:var(--sidebar-w);background:var(--navy);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid var(--yellow)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+/* Main */
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--navy)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+/* Content */
+.content{padding:24px;flex:1}
+
+/* Page */
+.page{display:none}
+.page.active{display:block}
+
+/* Cards row */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--navy)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi.yellow .knum{color:#e65100}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+/* Table card */
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--navy)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+/* Table */
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#fffef5}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--navy);color:#fff}
+.act-mail{background:var(--yellow);color:var(--navy)}
+.act-est{background:var(--blue-light);color:var(--blue)}
+
+/* Type badge */
+.type-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:3px;display:inline-block}
+.tb-ac{background:#e3f0fc;color:#1565c0}
+.tb-ant{background:#fff8e1;color:#e65100}
+.tb-elec{background:#f3e5f5;color:#7b1fa2}
+
+/* Estimate page */
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--navy)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--navy);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:#1a3d7a}
+
+/* Estimate preview */
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--navy)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+/* Estimate document */
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--navy)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--navy)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--navy);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--yellow-bg);padding:10px 12px;border-radius:4px;margin-bottom:14px;border-left:3px solid var(--yellow)}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--navy);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--navy);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:var(--yellow)}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+/* Calendar page */
+.cal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:4px}
+.cal-item{background:#fff;border-radius:8px;border:1px solid var(--line);padding:14px 16px}
+.cal-date{font-size:11px;color:var(--gray);margin-bottom:6px}
+.cal-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.cal-work{font-size:12px;color:var(--gray)}
+.cal-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:3px;display:inline-block;margin-top:6px}
+.cb-ac{background:#e3f0fc;color:#1565c0}
+.cb-ant{background:#fff8e1;color:#e65100}
+.cb-elec{background:#f3e5f5;color:#7b1fa2}
+
+/* Mobile */
+@media(max-width:768px){
+  .app{flex-direction:column}
+  .sidebar{width:100%;min-height:auto;flex-direction:column}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0;display:flex;flex-direction:row;overflow-x:auto}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px;font-size:11px}
+  .nav-item.active{border-right:none;border-bottom:3px solid var(--yellow)}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .kpi .knum{font-size:20px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .action-cell{flex-wrap:wrap}
+  .est-layout{grid-template-columns:1fr}
+  .form-row-2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+</style>
+</head>
+<body>
+
+<div class="demo-bar">⚡ DEMO | 浦和電機様 業務管理システム（体験版）— 業務改善舎 作成</div>
+
+<div class="app">
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">⚡</div>
+      <div class="company">浦和電機</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',this)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('customers',this)">
+        <span class="ni">👥</span>顧客管理
+      </div>
+      <div class="nav-item" onclick="showPage('followup',this)">
+        <span class="ni">🔔</span>フォローアップ
+      </div>
+      <div class="nav-item" onclick="showPage('estimate',this)">
+        <span class="ni">📋</span>見積書作成
+      </div>
+      <div class="nav-item" onclick="showPage('calendar',this)">
+        <span class="ni">📅</span>工事カレンダー
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      浦和電機<br>
+      さいたま市浦和区<br>
+      創立50年
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum" id="kpi-total">12</div>
+            <div class="klabel">🔧 今月の工事件数</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum" id="kpi-clean">5</div>
+            <div class="klabel">❄️ エアコンクリーニング案内対象</div>
+          </div>
+          <div class="kpi yellow">
+            <div class="knum" id="kpi-antenna">3</div>
+            <div class="klabel">📡 アンテナ点検予定</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum" id="kpi-unfollow">2</div>
+            <div class="klabel">⚠️ 未フォロー顧客</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⚠️ 未フォロー・要対応のお客様</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>工事日</th><th>次回フォロー</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">高橋 誠 様</div><div style="font-size:11px;color:var(--gray)">浦和区XX1丁目</div></td>
+                <td><span class="type-badge tb-ac">エアコン</span> 取付（2台）</td>
+                <td>2023-06-15</td>
+                <td><span class="status-dot sd-urgent">🔴 2024-06-15 超過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-mail">✉️ 案内</button><button class="act-btn act-est" onclick="loadEstimate('高橋 誠')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">中村 幸子 様</div><div style="font-size:11px;color:var(--gray)">浦和区XX2丁目</div></td>
+                <td><span class="type-badge tb-ac">エアコン</span> 取付 + クリーニング</td>
+                <td>2023-08-20</td>
+                <td><span class="status-dot sd-urgent">🔴 2024-08-20 超過</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-mail">✉️ 案内</button><button class="act-btn act-est" onclick="loadEstimate('中村 幸子')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🟠 今月中にフォローを検討</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>工事日</th><th>次回フォロー</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">木村 正雄 様</div><div style="font-size:11px;color:var(--gray)">浦和区XX3丁目</div></td>
+                <td><span class="type-badge tb-ant">アンテナ</span> 地デジアンテナ工事</td>
+                <td>2024-01-10</td>
+                <td><span class="status-dot sd-soon">🟠 2026-01-10</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('木村 正雄')">📋 見積</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">林 由美子 様</div><div style="font-size:11px;color:var(--gray)">浦和区XX4丁目</div></td>
+                <td><span class="type-badge tb-elec">電気</span> 照明交換 + コンセント増設</td>
+                <td>2024-02-28</td>
+                <td><span class="status-dot sd-soon">🟠 2026-08-28</span></td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('林 由美子')">📋 見積</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">顧客管理</span>
+            <div class="filter-bar">
+              <select class="f-select" id="typeFilter" onchange="filterAndSearch()">
+                <option value="all">すべての工事</option>
+                <option value="エアコン">❄️ エアコン</option>
+                <option value="アンテナ">📡 アンテナ</option>
+                <option value="電気">⚡ 電気工事</option>
+              </select>
+              <input class="search-box" type="text" id="nameSearch" placeholder="お名前で検索..." oninput="filterAndSearch()"/>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>工事日</th><th>次回フォロー日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Followup -->
+      <div class="page" id="page-followup">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🔔 フォローアップ管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterFollowup(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 要連絡</option>
+                <option value="soon">🟠 もうすぐ</option>
+                <option value="ok">🟢 余裕あり</option>
+              </select>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>お客様</th><th>工事内容</th><th>工事日</th><th>次回フォロー</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="followupBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--navy);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">見積書作成</div>
+            <div class="form-group">
+              <label>お客様名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：高橋 誠"/>
+            </div>
+            <div class="form-group">
+              <label>工事の種類</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <option value="ac_new">エアコン新規取付（6〜8畳）</option>
+                <option value="ac_new_l">エアコン新規取付（10〜14畳）</option>
+                <option value="ac_move">エアコン移設工事</option>
+                <option value="ac_remove">エアコン取外し工事</option>
+                <option value="ac_clean">エアコンクリーニング（1台）</option>
+                <option value="ac_clean2">エアコンクリーニング（2台セット）</option>
+                <option value="ant_basic">地デジアンテナ取付工事</option>
+                <option value="ant_bs">地デジ+BSアンテナ工事</option>
+                <option value="ant_check">アンテナ点検・調整</option>
+                <option value="elec_light">照明器具交換工事</option>
+                <option value="elec_outlet">コンセント増設工事</option>
+                <option value="elec_breaker">分電盤交換工事</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>台数・箇所数</label>
+                <input class="form-input" type="number" id="qty" placeholder="例：1" min="1"/>
+              </div>
+              <div class="form-group">
+                <label>作業階数</label>
+                <select class="form-select" id="floor">
+                  <option value="1">1階（標準）</option>
+                  <option value="2">2階（追加あり）</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="note" placeholder="例：配管カバー希望、屋根裏配線 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">見積書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">見積書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="printEstimate()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左で工事内容を入力して<br>「見積書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">浦和電機</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">さいたま市浦和区<br>電気工事・エアコン工事・アンテナ工事</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">御 見 積 書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">お客様</div>
+                  <div class="to-name" id="docCustName">　　　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">件名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>工事項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="page" id="page-calendar">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 工事カレンダー（今月の予定）</span>
+          </div>
+          <div style="padding:16px">
+            <div class="cal-grid" id="calGrid"></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+// 今日の日付
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+// ページ切替
+function showPage(id, el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(el) el.classList.add('active');
+  const titles={dashboard:'ダッシュボード',customers:'顧客管理',followup:'フォローアップ',estimate:'見積書作成',calendar:'工事カレンダー'};
+  document.getElementById('pageTitle').textContent=titles[id]||id;
+}
+
+// 顧客データ
+const customers=[
+  {name:'高橋 誠',addr:'浦和区XX1丁目',type:'エアコン',work:'エアコン取付（2台）',date:'2023-06-15',next:'2024-06-15',status:'urgent'},
+  {name:'中村 幸子',addr:'浦和区XX2丁目',type:'エアコン',work:'エアコン取付 + クリーニング',date:'2023-08-20',next:'2024-08-20',status:'urgent'},
+  {name:'木村 正雄',addr:'浦和区XX3丁目',type:'アンテナ',work:'地デジアンテナ工事',date:'2024-01-10',next:'2026-01-10',status:'soon'},
+  {name:'林 由美子',addr:'浦和区XX4丁目',type:'電気',work:'照明交換 + コンセント増設',date:'2024-02-28',next:'2026-08-28',status:'soon'},
+  {name:'岡田 浩二',addr:'浦和区XX5丁目',type:'エアコン',work:'エアコン取付（3台）',date:'2024-05-10',next:'2025-05-10',status:'ok'},
+  {name:'山本 幸恵',addr:'浦和区XX6丁目',type:'アンテナ',work:'BS/CSアンテナ設置工事',date:'2024-06-25',next:'2026-06-25',status:'ok'},
+  {name:'斎藤 健一',addr:'浦和区XX7丁目',type:'電気',work:'分電盤交換工事',date:'2024-07-15',next:'2027-07-15',status:'ok'},
+  {name:'松本 治子',addr:'浦和区XX8丁目',type:'エアコン',work:'エアコンクリーニング（2台）',date:'2024-09-05',next:'2025-09-05',status:'ok'},
+];
+
+const sLabel={urgent:'🔴 要連絡',soon:'🟠 もうすぐ',ok:'🟢 対応済'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+const typeClass={エアコン:'tb-ac',アンテナ:'tb-ant',電気:'tb-elec'};
+
+function renderCustomers(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td><span class="type-badge ${typeClass[c.type]||'tb-elec'}">${c.type}</span> <span style="font-size:12px">${c.work}</span></td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-mail">✉️</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+function renderFollowup(list){
+  document.getElementById('followupBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.addr}</div></td>
+      <td><span class="type-badge ${typeClass[c.type]||'tb-elec'}">${c.type}</span> <span style="font-size:12px">${c.work}</span></td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞 電話</button>
+        <button class="act-btn act-mail">✉️ 案内</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋 見積</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+renderCustomers(customers);
+renderFollowup(customers);
+
+function filterAndSearch(){
+  const tv=document.getElementById('typeFilter').value;
+  const sv=document.getElementById('nameSearch').value;
+  let list=customers;
+  if(tv!=='all') list=list.filter(c=>c.type===tv);
+  if(sv) list=list.filter(c=>c.name.includes(sv));
+  renderCustomers(list);
+}
+
+function filterFollowup(v){
+  renderFollowup(v==='all'?customers:customers.filter(c=>c.status===v));
+}
+
+// カレンダーデータ
+const calItems=[
+  {date:'5月7日（水）',name:'高橋 誠 様',work:'エアコンクリーニング（2台）',type:'エアコン'},
+  {date:'5月9日（金）',name:'新規：伊藤 様',work:'エアコン新規取付（10〜14畳）',type:'エアコン'},
+  {date:'5月12日（月）',name:'木村 正雄 様',work:'アンテナ点検・調整',type:'アンテナ'},
+  {date:'5月14日（水）',name:'佐々木 様',work:'コンセント増設工事',type:'電気'},
+  {date:'5月16日（金）',name:'山本 幸恵 様',work:'BSアンテナ調整',type:'アンテナ'},
+  {date:'5月20日（火）',name:'新規：田辺 様',work:'エアコン取付（2台）',type:'エアコン'},
+  {date:'5月22日（木）',name:'斎藤 健一 様',work:'分電盤点検',type:'電気'},
+  {date:'5月26日（月）',name:'松本 治子 様',work:'エアコンクリーニング',type:'エアコン'},
+];
+const calTypeClass={エアコン:'cb-ac',アンテナ:'cb-ant',電気:'cb-elec'};
+document.getElementById('calGrid').innerHTML=calItems.map(i=>`
+  <div class="cal-item">
+    <div class="cal-date">📅 ${i.date}</div>
+    <div class="cal-name">${i.name}</div>
+    <div class="cal-work">${i.work}</div>
+    <span class="cal-badge ${calTypeClass[i.type]||'cb-elec'}">${i.type}</span>
+  </div>`).join('');
+
+// 見積書データ
+const jobs={
+  ac_new:{name:'エアコン新規取付工事（6〜8畳）',items:[
+    {n:'エアコン取付基本工事',u:15000},{n:'専用コンセント設置',u:8000},
+    {n:'配管工事・テープ仕上げ',u:5000},{n:'試運転・動作確認',u:2000}]},
+  ac_new_l:{name:'エアコン新規取付工事（10〜14畳）',items:[
+    {n:'エアコン取付工事（大型）',u:20000},{n:'専用コンセント設置',u:8000},
+    {n:'配管工事・テープ仕上げ',u:6000},{n:'試運転・動作確認',u:2000}]},
+  ac_move:{name:'エアコン移設工事',items:[
+    {n:'既設エアコン取外し',u:8000},{n:'移設・再取付工事',u:12000},
+    {n:'配管延長・接続',u:5000},{n:'動作確認・試運転',u:2000}]},
+  ac_remove:{name:'エアコン取外し工事',items:[
+    {n:'エアコン取外し作業',u:6000},{n:'配管・穴埋め処理',u:3000},{n:'廃材撤去・清掃',u:2000}]},
+  ac_clean:{name:'エアコンクリーニング（1台）',items:[
+    {n:'エアコン分解洗浄',u:9000},{n:'フィルター・カバー清掃',u:2000},{n:'動作確認・試運転',u:1000}]},
+  ac_clean2:{name:'エアコンクリーニング（2台セット）',items:[
+    {n:'エアコン分解洗浄（2台）',u:16000},{n:'フィルター・カバー清掃（2台）',u:3000},{n:'動作確認・試運転',u:1000}]},
+  ant_basic:{name:'地デジアンテナ取付工事',items:[
+    {n:'UHFアンテナ本体',u:8000},{n:'取付・設置工事',u:10000},
+    {n:'同軸ケーブル配線',u:5000},{n:'受信確認・チャンネル設定',u:2000}]},
+  ant_bs:{name:'地デジ+BSアンテナ工事',items:[
+    {n:'UHFアンテナ本体',u:8000},{n:'BSアンテナ本体',u:7000},
+    {n:'取付・設置工事',u:12000},{n:'混合器・配線工事',u:6000},{n:'受信確認・設定',u:2000}]},
+  ant_check:{name:'アンテナ点検・調整',items:[
+    {n:'アンテナレベル測定・調整',u:5000},{n:'接続部・防水処理確認',u:2000},{n:'報告書作成',u:1000}]},
+  elec_light:{name:'照明器具交換工事',items:[
+    {n:'LED照明器具（シーリング）',u:8000},{n:'取付工事・配線確認',u:5000},{n:'動作確認',u:1000}]},
+  elec_outlet:{name:'コンセント増設工事',items:[
+    {n:'コンセント本体',u:3000},{n:'配線工事・壁内配線',u:15000},{n:'動作確認',u:1000}]},
+  elec_breaker:{name:'分電盤交換工事',items:[
+    {n:'分電盤本体（スマート分電盤）',u:40000},{n:'交換・接続工事',u:20000},
+    {n:'漏電ブレーカー設置',u:5000},{n:'動作確認・申請手続き',u:5000}]},
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.getElementById('pageTitle').textContent='見積書作成';
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const qty=parseInt(document.getElementById('qty').value)||1;
+  const floor=parseInt(document.getElementById('floor').value)||1;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('工事の種類を選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=[...job.items.map(i=>({...i,amount:i.u*qty}))];
+  if(floor===2) items.push({n:'2階作業追加料金',u:5000,amount:5000});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 様';
+  document.getElementById('docJobName').textContent=job.name;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${qty}式</td><td style="text-align:right">¥${i.u.toLocaleString()}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・お見積りの有効期限は発行日より30日間です。\n・着工日程はご相談ください。\n・上記金額には消費税（10%）が含まれています。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function printEstimate(){window.print();}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+
+  doc.setFillColor(13,43,92);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Urawa Denki',14,12);
+  doc.setFontSize(9);
+  doc.text('Electric / Air Conditioner / Antenna Works  |  Urawa-ku, Saitama',14,20);
+  doc.setFontSize(20);
+  doc.text('ESTIMATE',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(255,248,225);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(40,40,80);
+  doc.setFontSize(10);
+  doc.text('To: '+currentEstData.cname+' sama',18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Subject: '+currentEstData.job.name,14,68);
+
+  doc.setFillColor(13,43,92);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,79.5);
+  doc.text('Qty',130,79.5);
+  doc.text('Unit',150,79.5);
+  doc.text('Amount',185,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(249,250,251);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text('1',133,y);
+    doc.text('Y'+item.u.toLocaleString(),152,y);
+    doc.text('Y'+item.amount.toLocaleString(),196,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(13,43,92);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(255,193,7);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: This estimate is valid for 30 days from the date of issue.',14,y);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+6);}
+
+  doc.setFillColor(243,244,248);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Urawa Denki  |  Urawa-ku, Saitama  |  Electric / AC / Antenna Works',105,290,{align:'center'});
+
+  doc.save('estimate_'+currentEstData.cname.replace(' ','')+'.pdf');
+}
+</script>
+</body>
+</html>
