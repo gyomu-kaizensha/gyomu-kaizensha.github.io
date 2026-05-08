@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>ちば醤油株式会社 業務管理システム（デモ）</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --main:#5d2906;
+  --sub:#f5e6d3;
+  --accent:#a05a2c;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --gray-bg:#f3f4f8;
+  --ink:#1a1a2e;
+  --gray:#5a6070;
+  --line:#dde3ea;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+.demo-bar{background:#1a1a2e;color:#f5c800;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+.app{display:flex;flex:1;overflow:hidden}
+
+.sidebar{width:var(--sidebar-w);background:var(--main);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid var(--accent)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--main)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+.content{padding:24px;flex:1}
+
+.page{display:none}
+.page.active{display:block}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--main)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--main)}
+.filter-bar{display:flex;gap:8px;align-items:center}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#fafbff}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.sd-low{background:#fef2f2;color:var(--red)}
+.sd-mid{background:#fff7ed;color:var(--orange)}
+.sd-high{background:var(--green-light);color:var(--green)}
+.action-cell{display:flex;gap:6px}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-pri{background:var(--main);color:#fff}
+.act-sec{background:var(--accent);color:#fff}
+.act-tri{background:var(--sub);color:var(--main)}
+
+.process-box{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px}
+@media(max-width:760px){.process-box{grid-template-columns:repeat(2,1fr)}}
+.proc{background:#fff;border-radius:8px;border:1px solid var(--line);padding:14px;text-align:center}
+.proc .pname{font-size:11px;color:var(--gray);font-weight:700;margin-bottom:6px}
+.proc .pcount{font-size:22px;font-weight:700;color:var(--main)}
+.proc .punit{font-size:10px;color:var(--gray)}
+.proc.warning .pcount{color:var(--orange)}
+
+@media(max-width:768px){
+  .app{display:block}
+  .sidebar{position:fixed;top:0;left:-100%;width:80%;max-width:280px;height:100%;z-index:1000;transition:left .3s ease;flex-direction:column}
+  .sidebar.open{left:0}
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;}
+  .overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;font-size:20px;color:var(--ink);background:none;border:none;}
+  .topbar{position:sticky;top:0;z-index:100;}
+  .main{width:100%;overflow-x:hidden;}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0}
+  .nav-item{padding:8px 12px;font-size:11px}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px}
+  .filter-bar{flex-wrap:wrap}
+  .nav-section{display:flex;flex-direction:row;overflow-x:auto;padding:4px 0;gap:0}
+  .nav-item{white-space:nowrap;flex-shrink:0;padding:10px 14px}
+  .nav-item.active{border-right:none;border-bottom:3px solid}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+@media(min-width:769px){.hamburger{display:none}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="demo-bar">DEMO | ちば醤油株式会社様 業務管理システム（体験版） — 業務改善舎 作成</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🍶</div>
+      <div class="company">ちば醤油</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',event)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('orders',event)">
+        <span class="ni">📦</span>受発注管理
+      </div>
+      <div class="nav-item" onclick="showPage('process',event)">
+        <span class="ni">⚙️</span>醸造工程進捗
+      </div>
+      <div class="nav-item" onclick="showPage('inventory',event)">
+        <span class="ni">📊</span>在庫管理
+      </div>
+      <div class="nav-item" onclick="showPage('customers',event)">
+        <span class="ni">🤝</span>取引先管理
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      ちば醤油<br>
+      千葉県香取市佐原XX-XX<br>
+      0478-XX-XXXX
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum">6</div>
+            <div class="klabel">📦 進行中の受注件数</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">20</div>
+            <div class="klabel">⚙️ 進行中工程</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">2</div>
+            <div class="klabel">⏰ 納期間近（3日以内）</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">2</div>
+            <div class="klabel">⚠️ 在庫アラート</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⏰ 納期間近の受注</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>受注No</th><th>取引先</th><th>品目</th><th>納期</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700;font-size:12px">RC-2026-0421</td><td style="font-size:12px">イオンリテール株式会社</td><td style="font-size:12px">本醸造醤油 1L × 600</td><td style="font-size:12px">2026-05-12</td><td><span class="status-dot sd-urgent">🔴 納期間近</span></td></tr>
+<tr><td style="font-weight:700;font-size:12px">RC-2026-0422</td><td style="font-size:12px">ヤオコー株式会社</td><td style="font-size:12px">刺身醤油 200ml × 1200</td><td style="font-size:12px">2026-05-15</td><td><span class="status-dot sd-urgent">🔴 納期間近</span></td></tr>
+
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">⚠️ 在庫アラート（補充検討）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>品目コード</th><th>品名</th><th>現在庫</th><th>最低在庫</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td style="font-weight:700;font-size:12px">SY-002</td><td style="font-size:12px">本醸造醤油 1.8L</td><td style="font-size:13px;font-weight:700;color:var(--red)">80本</td><td style="font-size:12px;color:var(--gray)">100本</td><td><span class="status-dot sd-low">🔴 要補充</span></td></tr>
+<tr><td style="font-weight:700;font-size:12px">SY-004</td><td style="font-size:12px">減塩醤油 500ml</td><td style="font-size:13px;font-weight:700;color:var(--red)">120本</td><td style="font-size:12px;color:var(--gray)">150本</td><td><span class="status-dot sd-low">🔴 要補充</span></td></tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Orders -->
+      <div class="page" id="page-orders">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">受発注管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterOrders(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">納期間近</option>
+                <option value="soon">来週納期</option>
+                <option value="ok">余裕あり</option>
+              </select>
+              <input class="search-box" type="text" placeholder="取引先で検索..." oninput="searchOrders(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table" id="ordTable">
+            <thead>
+              <tr><th>受注No</th><th>取引先</th><th>品目</th><th>納期</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="ordBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Process -->
+      <div class="page" id="page-process">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">醸造工程進捗 — 各工程の現在件数</span>
+          </div>
+          <div style="padding:20px">
+            <div class="process-box">
+              <div class="proc "><div class="pname">仕込</div><div class="pcount">4</div><div class="punit">件 進行中</div></div>
+<div class="proc warning"><div class="pname">発酵・熟成</div><div class="pcount">6</div><div class="punit">件 進行中</div></div>
+<div class="proc "><div class="pname">圧搾</div><div class="pcount">3</div><div class="punit">件 進行中</div></div>
+<div class="proc warning"><div class="pname">火入れ・濾過</div><div class="pcount">5</div><div class="punit">件 進行中</div></div>
+<div class="proc "><div class="pname">瓶詰・出荷</div><div class="pcount">2</div><div class="punit">件 進行中</div></div>
+
+            </div>
+            <div style="font-size:12px;color:var(--gray);line-height:1.7;background:var(--sub);padding:14px;border-radius:6px">
+              ※ 各工程の現在進行中件数を表示します。<br>
+              担当者がスマホ・タブレットから工程完了を1タップで報告でき、進捗が即時反映されます。
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Inventory -->
+      <div class="page" id="page-inventory">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">在庫管理</span>
+            <input class="search-box" type="text" placeholder="品名で検索..." oninput="searchInv(this.value)"/>
+          </div>
+          <table class="cust-table" id="invTable">
+            <thead>
+              <tr><th>品目コード</th><th>品名</th><th>現在庫</th><th>最低在庫</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="invBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Customers -->
+      <div class="page" id="page-customers">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">取引先管理</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>取引先名</th><th>累計受注件数</th><th>直近受注</th><th>備考</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function openSidebar(){document.querySelector('.sidebar').classList.add('open');document.getElementById('overlay').classList.add('open');}
+function closeSidebar(){document.querySelector('.sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+function showPage(id, ev){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(ev) ev.currentTarget.classList.add('active');
+  const titles={dashboard:'ダッシュボード',orders:'受発注管理',process:'醸造工程進捗',inventory:'在庫管理',customers:'取引先管理'};
+  document.getElementById('pageTitle').textContent=titles[id];
+  if(window.innerWidth<=768) closeSidebar();
+}
+
+const orders = [{"id": "RC-2026-0421", "customer": "イオンリテール株式会社", "product": "本醸造醤油 1L × 600", "due": "2026-05-12", "status": "urgent"}, {"id": "RC-2026-0422", "customer": "ヤオコー株式会社", "product": "刺身醤油 200ml × 1200", "due": "2026-05-15", "status": "urgent"}, {"id": "RC-2026-0423", "customer": "ベイシア株式会社", "product": "丸大豆醤油 500ml × 800", "due": "2026-05-22", "status": "soon"}, {"id": "RC-2026-0424", "customer": "成城石井株式会社", "product": "減塩醤油 500ml × 300", "due": "2026-05-28", "status": "soon"}, {"id": "RC-2026-0425", "customer": "ロピア", "product": "本醸造醤油 1.8L × 200", "due": "2026-06-05", "status": "ok"}, {"id": "RC-2026-0426", "customer": "ヤマダストアー", "product": "刺身醤油 200ml × 500", "due": "2026-06-10", "status": "ok"}];
+const products = [{"code": "SY-001", "name": "本醸造醤油 1L", "stock": 320, "min": 200, "unit": "本"}, {"code": "SY-002", "name": "本醸造醤油 1.8L", "stock": 80, "min": 100, "unit": "本"}, {"code": "SY-003", "name": "丸大豆醤油 500ml", "stock": 540, "min": 300, "unit": "本"}, {"code": "SY-004", "name": "減塩醤油 500ml", "stock": 120, "min": 150, "unit": "本"}, {"code": "SY-005", "name": "刺身醤油 200ml", "stock": 920, "min": 400, "unit": "本"}];
+const sLabel={urgent:'🔴 納期間近',soon:'🟠 来週納期',ok:'🟢 余裕あり'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+
+function renderOrders(list){
+  document.getElementById('ordBody').innerHTML=list.map(o=>`
+    <tr>
+      <td style="font-weight:700;font-size:12px">${o.id}</td>
+      <td style="font-size:12px">${o.customer}</td>
+      <td style="font-size:12px">${o.product}</td>
+      <td style="font-size:12px">${o.due}</td>
+      <td><span class="status-dot ${sClass[o.status]}">${sLabel[o.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-pri">詳細</button>
+        <button class="act-btn act-sec">出荷指示</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderOrders(orders);
+
+function filterOrders(v){
+  renderOrders(v==='all'?orders:orders.filter(o=>o.status===v));
+}
+function searchOrders(v){
+  renderOrders(v?orders.filter(o=>o.customer.includes(v)):orders);
+}
+
+function renderInv(list){
+  document.getElementById('invBody').innerHTML=list.map(p=>{
+    const ratio = p.stock/p.min;
+    let cls='sd-high', label='🟢 十分';
+    if(ratio<1){cls='sd-low';label='🔴 要補充';}
+    else if(ratio<1.5){cls='sd-mid';label='🟠 残り少';}
+    return `<tr>
+      <td style="font-weight:700;font-size:12px">${p.code}</td>
+      <td style="font-size:12px">${p.name}</td>
+      <td style="font-size:13px;font-weight:700">${p.stock}${p.unit}</td>
+      <td style="font-size:12px;color:var(--gray)">${p.min}${p.unit}</td>
+      <td><span class="status-dot ${cls}">${label}</span></td>
+      <td><button class="act-btn act-pri">入出庫</button></td>
+    </tr>`;
+  }).join('');
+}
+renderInv(products);
+function searchInv(v){
+  renderInv(v?products.filter(p=>p.name.includes(v)||p.code.includes(v)):products);
+}
+
+// 取引先集計
+const custMap={};
+orders.forEach(o=>{
+  if(!custMap[o.customer]) custMap[o.customer]={count:0,recent:o.due};
+  custMap[o.customer].count++;
+  if(o.due>custMap[o.customer].recent) custMap[o.customer].recent=o.due;
+});
+const custList=Object.keys(custMap).map(k=>({name:k,...custMap[k]}));
+document.getElementById('custBody').innerHTML=custList.map(c=>`
+  <tr>
+    <td style="font-weight:700;font-size:13px">${c.name}</td>
+    <td style="font-size:13px">${c.count}件</td>
+    <td style="font-size:12px;color:var(--gray)">${c.recent}</td>
+    <td style="font-size:12px;color:var(--gray)">継続取引中</td>
+    <td><div class="action-cell"><button class="act-btn act-pri">受注履歴</button><button class="act-btn act-sec">連絡</button></div></td>
+  </tr>`).join('');
+</script>
+</body>
+</html>

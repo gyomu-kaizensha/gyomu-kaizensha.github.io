@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>日本財託管理サービス 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --primary:#1a3a6e;
+  --primary-dark:#13284f;
+  --accent:#c9a85b;
+  --gray-bg:#f3f4f8;
+  --ink:#1a1a2e;
+  --gray:#5a6070;
+  --line:#dde3ea;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --orange:#ea580c;
+  --red:#dc2626;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+.demo-bar{background:#1a1a2e;color:#c9a85b;text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+.app{display:flex;flex:1;overflow:hidden}
+.sidebar{width:var(--sidebar-w);background:var(--primary);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.1)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.5);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.35);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.65);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.06)}
+.nav-item.active{background:rgba(255,255,255,.12);color:#fff;border-right:3px solid var(--accent)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.1);font-size:11px;color:rgba(255,255,255,.35);line-height:1.6}
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--primary)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+.content{padding:24px;flex:1}
+.page{display:none}
+.page.active{display:block}
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--primary)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--primary)}
+.filter-bar{display:flex;gap:8px;align-items:center}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--gray-bg);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--gray);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#fafbff}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:#fff7ed;color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.sd-vacant{background:#f3f4f6;color:#6b7280}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--primary);color:#fff}
+.act-mail{background:var(--accent);color:var(--primary)}
+.act-est{background:#eef2ff;color:var(--primary)}
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--primary)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--primary);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:var(--primary-dark)}
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--primary)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--primary)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--primary)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--primary);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--gray-bg);padding:10px 12px;border-radius:4px;margin-bottom:14px}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--primary);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--primary);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.8}
+.est-total-row .tv{font-size:20px;font-weight:700;color:var(--accent)}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px;white-space:pre-line}
+@media(max-width:768px){
+  .app{display:block}
+  .sidebar{position:fixed;top:0;left:-100%;width:80%;max-width:280px;height:100%;z-index:1000;transition:left .3s ease;flex-direction:column}
+  .sidebar.open{left:0}
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;}
+  .overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;font-size:20px;color:var(--ink);background:none;border:none;}
+  .topbar{position:sticky;top:0;z-index:100;}
+  .main{width:100%;overflow-x:hidden;}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0}
+  .nav-item{padding:8px 12px;font-size:11px}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .filter-bar{flex-wrap:wrap}
+  .est-layout{grid-template-columns:1fr}
+  .est-form-card{padding:14px}
+  .form-row-2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .kpi-row{grid-template-columns:1fr 1fr}
+  .demo-bar{font-size:10px;padding:4px}
+}
+@media(min-width:769px){.hamburger{display:none}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="demo-bar">⚠️ DEMO | 株式会社日本財託管理サービス様 業務管理システム（体験版） — 業務改善舎 作成</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🏢</div>
+      <div class="company">日本財託管理サービス</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard',event)">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('properties',event)">
+        <span class="ni">🏢</span>物件・入居者管理
+      </div>
+      <div class="nav-item" onclick="showPage('repairs',event)">
+        <span class="ni">🔧</span>修繕履歴管理
+      </div>
+      <div class="nav-item" onclick="showPage('report',event)">
+        <span class="ni">📊</span>オーナー報告書
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      日本財託管理サービス<br>
+      東京都新宿区西新宿（デモ住所）<br>
+      03-XXXX-XXXX
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <div class="page active" id="page-dashboard">
+        <div style="font-size:12px;color:var(--gray);margin-bottom:14px">投資用マンション管理に最適化</div>
+        <div class="kpi-row">
+          <div class="kpi">
+            <div class="knum">7</div>
+            <div class="klabel">🏢 管理物件数</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">2</div>
+            <div class="klabel">📅 契約更新間近(30日)</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">2</div>
+            <div class="klabel">🔧 修繕進行中</div>
+          </div>
+          <div class="kpi">
+            <div class="knum">1</div>
+            <div class="klabel">⚪ 空室物件</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🔴 契約更新が間近の物件</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>物件</th><th>入居者</th><th style="text-align:right">家賃</th><th>更新日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+        <td><div style="font-weight:700">グランドメゾン新宿 301</div><div style="font-size:11px;color:var(--gray)">新宿区XX1-2-3</div></td>
+        <td style="font-size:12px">山田 太郎</td>
+        <td style="font-size:12px;text-align:right">¥145,000</td>
+        <td style="font-size:12px">2026-06-15</td>
+        <td><span class="status-dot sd-urgent">🔴 期限間近(30日以内)</span></td>
+        <td><div class="action-cell">
+          <button class="act-btn act-call">📞</button>
+          <button class="act-btn act-mail">✉️</button>
+          <button class="act-btn act-est" onclick="loadReport('グランドメゾン新宿 301','山田 太郎')">📊 報告書</button>
+        </div></td>
+      </tr>
+<tr>
+        <td><div style="font-weight:700">サンライズ中野 205</div><div style="font-size:11px;color:var(--gray)">中野区XX2-4-1</div></td>
+        <td style="font-size:12px">鈴木 花子</td>
+        <td style="font-size:12px;text-align:right">¥98,000</td>
+        <td style="font-size:12px">2026-06-30</td>
+        <td><span class="status-dot sd-urgent">🔴 期限間近(30日以内)</span></td>
+        <td><div class="action-cell">
+          <button class="act-btn act-call">📞</button>
+          <button class="act-btn act-mail">✉️</button>
+          <button class="act-btn act-est" onclick="loadReport('サンライズ中野 205','鈴木 花子')">📊 報告書</button>
+        </div></td>
+      </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🟠 3ヶ月以内に更新予定の物件</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>物件</th><th>入居者</th><th style="text-align:right">家賃</th><th>更新日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+        <td><div style="font-weight:700">パークアベニュー渋谷 502</div><div style="font-size:11px;color:var(--gray)">渋谷区XX3-1-7</div></td>
+        <td style="font-size:12px">佐藤 一郎</td>
+        <td style="font-size:12px;text-align:right">¥178,000</td>
+        <td style="font-size:12px">2026-08-10</td>
+        <td><span class="status-dot sd-soon">🟠 3ヶ月以内</span></td>
+        <td><div class="action-cell">
+          <button class="act-btn act-call">📞</button>
+          <button class="act-btn act-mail">✉️</button>
+          <button class="act-btn act-est" onclick="loadReport('パークアベニュー渋谷 502','佐藤 一郎')">📊 報告書</button>
+        </div></td>
+      </tr>
+<tr>
+        <td><div style="font-weight:700">リバーサイド品川 1208</div><div style="font-size:11px;color:var(--gray)">品川区XX4-2-9</div></td>
+        <td style="font-size:12px">田中 美智子</td>
+        <td style="font-size:12px;text-align:right">¥220,000</td>
+        <td style="font-size:12px">2026-09-22</td>
+        <td><span class="status-dot sd-soon">🟠 3ヶ月以内</span></td>
+        <td><div class="action-cell">
+          <button class="act-btn act-call">📞</button>
+          <button class="act-btn act-mail">✉️</button>
+          <button class="act-btn act-est" onclick="loadReport('リバーサイド品川 1208','田中 美智子')">📊 報告書</button>
+        </div></td>
+      </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page" id="page-properties">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">物件・入居者管理</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterProps(this.value)">
+                <option value="all">すべて</option>
+                <option value="urgent">🔴 更新間近</option>
+                <option value="soon">🟠 要確認</option>
+                <option value="ok">🟢 安定</option>
+                <option value="vacant">⚪ 空室</option>
+              </select>
+              <input class="search-box" type="text" placeholder="物件名で検索..." oninput="searchProps(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>物件</th><th>入居者</th><th style="text-align:right">家賃</th><th>更新日</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="propBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page" id="page-repairs">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">修繕履歴管理</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>物件</th><th>修繕種別</th><th>業者</th><th>着工日</th><th>状況</th><th style="text-align:right">費用</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+        <td style="font-weight:700">グランドメゾン新宿 301</td>
+        <td style="font-size:12px">給湯器交換</td>
+        <td style="font-size:12px">○○設備</td>
+        <td style="font-size:12px">2026-05-02</td>
+        <td><span class="status-dot sd-soon">進行中</span></td>
+        <td style="text-align:right;font-size:12px">¥180,000</td>
+      </tr>
+<tr>
+        <td style="font-weight:700">サンライズ中野 205</td>
+        <td style="font-size:12px">エアコン修理</td>
+        <td style="font-size:12px">△△電機</td>
+        <td style="font-size:12px">2026-05-05</td>
+        <td><span class="status-dot sd-soon">進行中</span></td>
+        <td style="text-align:right;font-size:12px">¥35,000</td>
+      </tr>
+<tr>
+        <td style="font-weight:700">パークアベニュー渋谷 502</td>
+        <td style="font-size:12px">壁紙張替</td>
+        <td style="font-size:12px">□□内装</td>
+        <td style="font-size:12px">2026-04-20</td>
+        <td><span class="status-dot sd-ok">完了</span></td>
+        <td style="text-align:right;font-size:12px">¥95,000</td>
+      </tr>
+<tr>
+        <td style="font-weight:700">リバーサイド品川 1208</td>
+        <td style="font-size:12px">排水口詰まり対応</td>
+        <td style="font-size:12px">××水道</td>
+        <td style="font-size:12px">2026-04-15</td>
+        <td><span class="status-dot sd-ok">完了</span></td>
+        <td style="text-align:right;font-size:12px">¥18,000</td>
+      </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="page" id="page-report">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--primary);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">オーナー報告書作成</div>
+            <div class="form-group">
+              <label>物件名</label>
+              <input class="form-input" type="text" id="propName" placeholder="例：グランドメゾン新宿 301"/>
+            </div>
+            <div class="form-group">
+              <label>入居者名</label>
+              <input class="form-input" type="text" id="tenantName" placeholder="例：山田 太郎"/>
+            </div>
+            <div class="form-group">
+              <label>報告期間</label>
+              <select class="form-select" id="period">
+                <option value="month">月次報告</option>
+                <option value="quarter">四半期報告</option>
+                <option value="year">年次報告</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>家賃収入</label>
+                <input class="form-input" type="number" id="income" placeholder="例：145000" min="0"/>
+              </div>
+              <div class="form-group">
+                <label>管理費・経費</label>
+                <input class="form-input" type="number" id="expense" placeholder="例：18000" min="0"/>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="note" placeholder="例：5月分修繕対応あり 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateReport()">報告書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">オーナー報告書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="window.print()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDFダウンロード</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左で物件情報を入力して<br>「報告書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">日本財託管理サービス</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">東京都新宿区西新宿（デモ住所）<br>TEL: 03-XXXX-XXXX</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">オーナー報告書</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">物件オーナー</div>
+                  <div class="to-name" id="docPropName">　　　　　</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">入居者：</span><span id="docTenant" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">期間：</span><span id="docPeriod"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>項目</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">収支差額</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function openSidebar(){document.querySelector('.sidebar').classList.add('open');document.getElementById('overlay').classList.add('open');}
+function closeSidebar(){document.querySelector('.sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+
+const today=new Date();
+document.getElementById('todayDate').textContent=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+function showPage(id,ev){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  if(ev&&ev.currentTarget)ev.currentTarget.classList.add('active');
+  const titles={dashboard:'ダッシュボード',properties:'物件・入居者管理',repairs:'修繕履歴管理',report:'オーナー報告書'};
+  document.getElementById('pageTitle').textContent=titles[id];
+  closeSidebar();
+}
+
+const properties=[
+  {name:'グランドメゾン新宿 301',addr:'新宿区XX1-2-3',tenant:'山田 太郎',rent:145000,renew:'2026-06-15',status:'urgent',label:'🔴 期限間近(30日以内)'},
+  {name:'サンライズ中野 205',addr:'中野区XX2-4-1',tenant:'鈴木 花子',rent:98000,renew:'2026-06-30',status:'urgent',label:'🔴 期限間近(30日以内)'},
+  {name:'パークアベニュー渋谷 502',addr:'渋谷区XX3-1-7',tenant:'佐藤 一郎',rent:178000,renew:'2026-08-10',status:'soon',label:'🟠 3ヶ月以内'},
+  {name:'リバーサイド品川 1208',addr:'品川区XX4-2-9',tenant:'田中 美智子',rent:220000,renew:'2026-09-22',status:'soon',label:'🟠 3ヶ月以内'},
+  {name:'セントラルレジデンス池袋 408',addr:'豊島区XX5-3-2',tenant:'伊藤 健二',rent:132000,renew:'2027-01-15',status:'ok',label:'🟢 余裕あり'},
+  {name:'メゾンドール目黒 102',addr:'目黒区XX6-1-4',tenant:'(空室)',rent:165000,renew:'-',status:'vacant',label:'⚪ 空室'},
+  {name:'ロイヤルパレス中目黒 705',addr:'目黒区XX7-2-8',tenant:'渡辺 良子',rent:198000,renew:'2027-03-08',status:'ok',label:'🟢 余裕あり'}
+];
+
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok',vacant:'sd-vacant'};
+
+function renderProps(list){
+  document.getElementById('propBody').innerHTML=list.map(p=>`
+    <tr>
+      <td><div style="font-weight:700">${p.name}</div><div style="font-size:11px;color:var(--gray)">${p.addr}</div></td>
+      <td style="font-size:12px">${p.tenant}</td>
+      <td style="font-size:12px;text-align:right">¥${p.rent.toLocaleString()}</td>
+      <td style="font-size:12px">${p.renew}</td>
+      <td><span class="status-dot ${sClass[p.status]}">${p.label}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-mail">✉️</button>
+        <button class="act-btn act-est" onclick="loadReport('${p.name}','${p.tenant}')">📊 報告</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderProps(properties);
+
+function filterProps(v){
+  renderProps(v==='all'?properties:properties.filter(p=>p.status===v));
+}
+function searchProps(v){
+  renderProps(v?properties.filter(p=>p.name.includes(v)||p.tenant.includes(v)):properties);
+}
+
+function loadReport(name,tenant){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-report').classList.add('active');
+  document.getElementById('pageTitle').textContent='オーナー報告書';
+  document.querySelectorAll('.nav-item')[3].classList.add('active');
+  document.getElementById('propName').value=name;
+  document.getElementById('tenantName').value=tenant;
+}
+
+let currentData=null;
+
+function generateReport(){
+  const pname=document.getElementById('propName').value||'　';
+  const tname=document.getElementById('tenantName').value||'　';
+  const period=document.getElementById('period').value;
+  const income=parseInt(document.getElementById('income').value)||0;
+  const expense=parseInt(document.getElementById('expense').value)||0;
+  const note=document.getElementById('note').value;
+
+  const periodLabel={month:'月次',quarter:'四半期',year:'年次'}[period];
+  const net=income-expense;
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docPropName').textContent=pname;
+  document.getElementById('docTenant').textContent=tname+' 様';
+  document.getElementById('docPeriod').textContent=periodLabel;
+
+  let rows='';
+  rows+=`<tr><td>家賃収入</td><td style="text-align:right">¥${income.toLocaleString()}</td></tr>`;
+  rows+=`<tr><td>管理費・経費</td><td style="text-align:right">▲¥${expense.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td style="font-weight:700">小計</td><td style="text-align:right;font-weight:700">¥${net.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+net.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・本報告書はデモ用サンプルです。\n・実運用では入居状況・修繕履歴・契約更新状況を自動連携します。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentData={pname,tname,periodLabel,income,expense,net,todayStr,note};
+}
+
+function downloadPDF(){
+  if(!currentData)return;
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  const hex='#1a3a6e';
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const ahex='#c9a85b';
+  const ar=parseInt(ahex.slice(1,3),16),ag=parseInt(ahex.slice(3,5),16),ab=parseInt(ahex.slice(5,7),16);
+
+  doc.setFont('helvetica');
+  doc.setFillColor(r,g,b);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('日本財託管理サービス',14,12);
+  doc.setFontSize(9);
+  doc.text('TEL: 03-XXXX-XXXX',14,20);
+  doc.setFontSize(20);
+  doc.text('OWNER REPORT',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentData.todayStr,14,36);
+  doc.text('Period: '+currentData.periodLabel,14,42);
+
+  doc.setFillColor(243,244,248);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(40,40,80);
+  doc.setFontSize(10);
+  doc.text('Property: '+currentData.pname,18,56);
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Tenant: '+currentData.tname,14,68);
+
+  doc.setFillColor(r,g,b);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(9);
+  doc.text('Item',16,79.5);
+  doc.text('Amount',196,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  doc.setFontSize(9);
+  doc.text('Rent Income',16,y);
+  doc.text('Y'+currentData.income.toLocaleString(),196,y,{align:'right'});
+  y+=10;
+  doc.text('Management Fee / Expenses',16,y);
+  doc.text('-Y'+currentData.expense.toLocaleString(),196,y,{align:'right'});
+  y+=14;
+
+  doc.setFillColor(r,g,b);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(ar,ag,ab);
+  doc.setFontSize(12);
+  doc.text('Net Total:  Y '+currentData.net.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: This is a demo sample report.',14,y);
+  if(currentData.note)doc.text('Remarks: '+currentData.note,14,y+6);
+
+  doc.setFillColor(243,244,248);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('日本財託管理サービス  |  03-XXXX-XXXX',105,290,{align:'center'});
+
+  doc.save('owner_report_'+currentData.pname.replace(/ /g,'_')+'.pdf');
+}
+</script>
+</body>
+</html>
