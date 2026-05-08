@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>四谷三丁目整体院 業務管理システム（デモ）</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet"/>
+<style>
+:root{
+  --brown:#6d4c41;
+  --brown-dark:#4e342e;
+  --cream:#f5e6d3;
+  --orange:#ff7043;
+  --orange-light:#fff3ee;
+  --green:#16a34a;
+  --green-light:#f0fdf4;
+  --red:#dc2626;
+  --gray-bg:#faf6f1;
+  --ink:#3e2723;
+  --gray:#7a6f68;
+  --line:#e8dccd;
+  --sidebar-w:220px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%}
+body{font-family:'Noto Sans JP',sans-serif;color:var(--ink);background:var(--gray-bg);display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+.demo-bar{background:var(--brown-dark);color:var(--cream);text-align:center;padding:6px;font-size:11px;font-weight:700;letter-spacing:.1em;flex-shrink:0}
+
+.app{display:flex;flex:1;overflow:hidden}
+
+.sidebar{width:var(--sidebar-w);background:var(--brown);display:flex;flex-direction:column;flex-shrink:0}
+.sidebar-logo{padding:20px 18px;border-bottom:1px solid rgba(255,255,255,.12)}
+.sidebar-logo .company{font-size:14px;font-weight:700;color:#fff;line-height:1.4}
+.sidebar-logo .system{font-size:10px;color:rgba(255,255,255,.55);margin-top:3px}
+.sidebar-logo .icon{font-size:22px;margin-bottom:8px}
+.nav-section{padding:12px 0}
+.nav-label{font-size:10px;color:rgba(255,255,255,.4);letter-spacing:.15em;padding:8px 18px 4px;font-weight:700}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 18px;font-size:13px;color:rgba(255,255,255,.7);cursor:pointer;transition:background .15s}
+.nav-item:hover{background:rgba(255,255,255,.08)}
+.nav-item.active{background:rgba(255,255,255,.14);color:#fff;border-right:3px solid var(--orange)}
+.nav-item .ni{font-size:16px;width:20px;text-align:center}
+.sidebar-footer{margin-top:auto;padding:16px 18px;border-top:1px solid rgba(255,255,255,.12);font-size:11px;color:rgba(255,255,255,.4);line-height:1.6}
+
+.main{flex:1;overflow-y:auto;display:flex;flex-direction:column}
+.topbar{background:#fff;border-bottom:1px solid var(--line);padding:0 24px;height:54px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-title{font-size:15px;font-weight:700;color:var(--brown-dark)}
+.topbar-right{display:flex;align-items:center;gap:12px}
+.today-badge{font-size:12px;color:var(--gray);background:var(--gray-bg);padding:4px 12px;border-radius:4px}
+
+.content{padding:24px;flex:1}
+
+.page{display:none}
+.page.active{display:block}
+
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+@media(max-width:700px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+.kpi{background:#fff;border-radius:8px;padding:16px 18px;border:1px solid var(--line)}
+.kpi .knum{font-size:28px;font-weight:700;line-height:1;color:var(--brown-dark)}
+.kpi.urgent .knum{color:var(--red)}
+.kpi.soon .knum{color:var(--orange)}
+.kpi.ok .knum{color:var(--green)}
+.kpi .klabel{font-size:11px;color:var(--gray);margin-top:6px}
+
+.card{background:#fff;border-radius:8px;border:1px solid var(--line);overflow:hidden;margin-bottom:20px}
+.card-head{padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
+.card-title{font-size:14px;font-weight:700;color:var(--brown-dark)}
+.filter-bar{display:flex;gap:8px;align-items:center}
+.f-select{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;background:#fff}
+.search-box{border:1px solid var(--line);border-radius:5px;padding:6px 10px;font-size:12px;font-family:inherit;width:140px}
+
+.cust-table{width:100%;border-collapse:collapse}
+.cust-table th{background:var(--cream);padding:10px 14px;text-align:left;font-size:11px;font-weight:700;color:var(--brown-dark);letter-spacing:.05em;border-bottom:1px solid var(--line)}
+.cust-table td{padding:12px 14px;border-bottom:1px solid var(--line);font-size:13px;vertical-align:middle}
+.cust-table tr:last-child td{border:none}
+.cust-table tr:hover td{background:#fdfaf5}
+.status-dot{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;padding:3px 10px;border-radius:4px}
+.sd-urgent{background:#fef2f2;color:var(--red)}
+.sd-soon{background:var(--orange-light);color:var(--orange)}
+.sd-ok{background:var(--green-light);color:var(--green)}
+.tag{display:inline-block;font-size:10px;font-weight:700;padding:2px 7px;border-radius:3px;letter-spacing:.03em}
+.tag-jiritsu{background:#e3f2fd;color:#1565c0}
+.tag-koshi{background:#fff3e0;color:#e65100}
+.tag-kata{background:#f3e5f5;color:#7b1fa2}
+.tag-keitsui{background:#fce4ec;color:#c2185b}
+.action-cell{display:flex;gap:6px;flex-wrap:wrap}
+.act-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;border:none;cursor:pointer;font-family:inherit}
+.act-call{background:var(--brown);color:#fff}
+.act-mail{background:var(--orange);color:#fff}
+.act-est{background:var(--cream);color:var(--brown-dark)}
+
+.est-layout{display:grid;grid-template-columns:380px 1fr;gap:20px}
+@media(max-width:760px){.est-layout{grid-template-columns:1fr}}
+.est-form-card{background:#fff;border-radius:8px;border:1px solid var(--line);padding:20px}
+.form-group{margin-bottom:14px}
+.form-group label{font-size:12px;font-weight:700;color:var(--gray);display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.05em}
+.form-input,.form-select{width:100%;border:1px solid var(--line);border-radius:5px;padding:9px 11px;font-size:13px;font-family:inherit;transition:border-color .15s}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--orange)}
+.form-row-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.gen-btn{width:100%;background:var(--brown);color:#fff;border:none;padding:12px;border-radius:5px;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit;margin-top:6px;transition:background .15s}
+.gen-btn:hover{background:var(--brown-dark)}
+
+.est-preview{background:#fff;border-radius:8px;border:1px solid var(--line)}
+.ep-head{padding:16px 20px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+.ep-title{font-size:13px;font-weight:700;color:var(--brown-dark)}
+.ep-actions{display:flex;gap:8px}
+.ep-btn{font-size:12px;font-weight:700;padding:7px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px}
+.ep-pdf{background:var(--red);color:#fff}
+.ep-print{background:var(--gray-bg);color:var(--ink);border:1px solid var(--line)}
+.ep-body{padding:20px}
+.ep-empty{text-align:center;padding:60px 20px;color:var(--gray);font-size:13px}
+
+.est-doc{font-size:13px}
+.est-doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:20px;padding-bottom:16px;border-bottom:2px solid var(--brown)}
+.est-doc-company{font-size:16px;font-weight:700;color:var(--brown-dark)}
+.est-doc-label{font-size:20px;font-weight:700;color:var(--brown-dark);text-align:right}
+.est-doc-meta{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;font-size:12px}
+.est-doc-to{background:var(--cream);padding:10px 12px;border-radius:4px;margin-bottom:14px}
+.est-doc-to .to-label{font-size:10px;color:var(--gray);margin-bottom:3px}
+.est-doc-to .to-name{font-size:15px;font-weight:700;color:var(--brown-dark)}
+.est-table-doc{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:12px}
+.est-table-doc th{background:var(--brown);color:#fff;padding:8px 10px;text-align:left;font-weight:500}
+.est-table-doc td{padding:8px 10px;border-bottom:1px solid var(--line)}
+.est-total-row{background:var(--brown);color:#fff;border-radius:5px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center;margin-top:10px}
+.est-total-row .tl{font-size:12px;opacity:.85}
+.est-total-row .tv{font-size:20px;font-weight:700;color:var(--cream)}
+.est-note{font-size:11px;color:var(--gray);margin-top:12px;line-height:1.7;padding:10px;background:var(--gray-bg);border-radius:4px}
+
+@media(max-width:768px){
+  .app{display:block}
+  .sidebar{position:fixed;top:0;left:-100%;width:80%;max-width:280px;height:100%;z-index:1000;transition:left .3s ease;flex-direction:column}
+  .sidebar.open{left:0}
+  .overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:999;}
+  .overlay.open{display:block}
+  .hamburger{display:flex;align-items:center;justify-content:center;width:40px;height:40px;cursor:pointer;font-size:20px;color:var(--ink);background:none;border:none;}
+  .topbar{position:sticky;top:0;z-index:100;}
+  .main{width:100%;overflow-x:hidden;}
+  .sidebar-logo{padding:12px 16px}
+  .nav-section{padding:4px 0}
+  .nav-item{padding:8px 12px;font-size:11px}
+  .nav-label{display:none}
+  .sidebar-footer{display:none}
+  .topbar{padding:0 12px;height:44px}
+  .topbar-title{font-size:13px}
+  .content{padding:12px}
+  .kpi-row{grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:12px}
+  .card-head{padding:10px 12px;flex-wrap:wrap;gap:6px}
+  .card-title{font-size:12px}
+  .cust-table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
+  .cust-table th,.cust-table td{padding:7px 8px;font-size:11px;white-space:nowrap}
+  .filter-bar{flex-wrap:wrap}
+  .est-form-card{padding:14px}
+  .form-row-2{grid-template-columns:1fr}
+  .ep-body{padding:12px}
+  .est-doc{font-size:11px}
+  .est-doc-meta{grid-template-columns:1fr}
+  .est-doc-header{flex-direction:column;gap:8px}
+  .est-doc-label{text-align:left;font-size:16px}
+  .est-total-row .tv{font-size:16px}
+}
+@media(max-width:480px){
+  .demo-bar{font-size:10px;padding:4px}
+}
+@media(min-width:769px){.hamburger{display:none}}
+</style>
+</head>
+<body>
+<div class="overlay" id="overlay" onclick="closeSidebar()"></div>
+<div class="demo-bar">DEMO | 四谷三丁目整体院様 業務管理システム（体験版／業務改善舎 作成）</div>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="icon">🌿</div>
+      <div class="company">四谷三丁目整体院</div>
+      <div class="system">業務管理システム</div>
+    </div>
+    <nav class="nav-section">
+      <div class="nav-label">メニュー</div>
+      <div class="nav-item active" onclick="showPage('dashboard')">
+        <span class="ni">🏠</span>ダッシュボード
+      </div>
+      <div class="nav-item" onclick="showPage('patients')">
+        <span class="ni">👤</span>患者管理
+      </div>
+      <div class="nav-item" onclick="showPage('reservation')">
+        <span class="ni">📅</span>予約管理
+      </div>
+      <div class="nav-item" onclick="showPage('ticket')">
+        <span class="ni">🎫</span>回数券管理
+      </div>
+      <div class="nav-item" onclick="showPage('estimate')">
+        <span class="ni">📋</span>料金プラン
+      </div>
+    </nav>
+    <div class="sidebar-footer">
+      四谷三丁目整体院<br>
+      新宿区四谷三丁目<br>
+      （駅徒歩1分・土日も20時まで）
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="topbar-title" id="pageTitle">ダッシュボード</div>
+      <div class="topbar-right">
+        <span class="today-badge" id="todayDate"></span>
+      </div>
+    </div>
+
+    <div class="content">
+
+      <!-- Dashboard -->
+      <div class="page active" id="page-dashboard">
+        <div class="kpi-row">
+          <div class="kpi ok">
+            <div class="knum">14</div>
+            <div class="klabel">📅 本日の予約数</div>
+          </div>
+          <div class="kpi urgent">
+            <div class="knum">5</div>
+            <div class="klabel">🌀 自律神経対応リピート対象</div>
+          </div>
+          <div class="kpi soon">
+            <div class="knum">8</div>
+            <div class="klabel">🎫 回数券残3回以下</div>
+          </div>
+          <div class="kpi">
+            <div class="knum">3</div>
+            <div class="klabel">📞 未連絡（1ヶ月以上）患者様</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🌀 自律神経対応コース：リピート促進対象</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>患者様</th><th>症状</th><th>最終来院日</th><th>次回予定</th><th>回数券残</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">高橋 美咲 様</div><div style="font-size:11px;color:var(--gray)">38歳・女性</div></td>
+                <td><span class="tag tag-jiritsu">自律神経</span></td>
+                <td>2026-04-12</td>
+                <td><span class="status-dot sd-urgent">🔴 推奨周期超過</span></td>
+                <td>残2回</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-mail">✉️ LINE</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">渡辺 麻衣 様</div><div style="font-size:11px;color:var(--gray)">42歳・女性</div></td>
+                <td><span class="tag tag-jiritsu">自律神経</span></td>
+                <td>2026-04-18</td>
+                <td><span class="status-dot sd-urgent">🔴 推奨周期超過</span></td>
+                <td>残4回</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-mail">✉️ LINE</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">中村 由美 様</div><div style="font-size:11px;color:var(--gray)">35歳・女性</div></td>
+                <td><span class="tag tag-jiritsu">自律神経</span></td>
+                <td>2026-04-22</td>
+                <td><span class="status-dot sd-soon">🟠 4/29推奨</span></td>
+                <td>残3回</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-mail">✉️ LINE</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🎫 回数券残数が少ない患者様</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>患者様</th><th>症状</th><th>回数券種別</th><th>残数</th><th>次回予定</th><th>操作</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:700">山本 健司 様</div><div style="font-size:11px;color:var(--gray)">52歳・男性</div></td>
+                <td><span class="tag tag-koshi">腰痛</span></td>
+                <td>10回券</td>
+                <td><span class="status-dot sd-urgent">🔴 残1回</span></td>
+                <td>2026-05-09</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('山本 健司')">📋 案内</button></div></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:700">佐々木 真由 様</div><div style="font-size:11px;color:var(--gray)">29歳・女性</div></td>
+                <td><span class="tag tag-kata">肩こり</span></td>
+                <td>5回券</td>
+                <td><span class="status-dot sd-soon">🟠 残2回</span></td>
+                <td>2026-05-11</td>
+                <td><div class="action-cell"><button class="act-btn act-call">📞 電話</button><button class="act-btn act-est" onclick="loadEstimate('佐々木 真由')">📋 案内</button></div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Patients -->
+      <div class="page" id="page-patients">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">患者管理（施術履歴）</span>
+            <div class="filter-bar">
+              <select class="f-select" onchange="filterPatients(this.value)">
+                <option value="all">すべての症状</option>
+                <option value="jiritsu">自律神経</option>
+                <option value="koshi">腰痛</option>
+                <option value="kata">肩こり</option>
+                <option value="keitsui">頸椎</option>
+              </select>
+              <input class="search-box" type="text" placeholder="患者様名で検索..." oninput="searchPatients(this.value)"/>
+            </div>
+          </div>
+          <table class="cust-table" id="custTable">
+            <thead>
+              <tr><th>患者様</th><th>症状</th><th>最終来院日</th><th>次回予定</th><th>回数券残</th><th>状態</th><th>操作</th></tr>
+            </thead>
+            <tbody id="custBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Reservation -->
+      <div class="page" id="page-reservation">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">📅 本日の予約一覧（土日夜間対応）</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>時刻</th><th>患者様</th><th>症状</th><th>コース</th><th>担当</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>10:00</td><td>高橋 美咲 様</td><td><span class="tag tag-jiritsu">自律神経</span></td><td>自律神経コース60分</td><td>院長</td><td><span class="status-dot sd-ok">✓ 受付済</span></td></tr>
+              <tr><td>11:00</td><td>山本 健司 様</td><td><span class="tag tag-koshi">腰痛</span></td><td>整体40分</td><td>スタッフA</td><td><span class="status-dot sd-ok">✓ 受付済</span></td></tr>
+              <tr><td>13:30</td><td>佐々木 真由 様</td><td><span class="tag tag-kata">肩こり</span></td><td>整体40分</td><td>スタッフB</td><td><span class="status-dot sd-soon">⏳ 未来院</span></td></tr>
+              <tr><td>15:00</td><td>渡辺 麻衣 様</td><td><span class="tag tag-jiritsu">自律神経</span></td><td>自律神経コース60分</td><td>院長</td><td><span class="status-dot sd-soon">⏳ 未来院</span></td></tr>
+              <tr><td>17:00</td><td>中村 由美 様</td><td><span class="tag tag-jiritsu">自律神経</span></td><td>自律神経コース60分</td><td>院長</td><td><span class="status-dot sd-soon">⏳ 未来院</span></td></tr>
+              <tr><td>19:00</td><td>小林 大輔 様</td><td><span class="tag tag-keitsui">頸椎</span></td><td>整体40分</td><td>スタッフA</td><td><span class="status-dot sd-soon">⏳ 未来院</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Ticket -->
+      <div class="page" id="page-ticket">
+        <div class="card">
+          <div class="card-head">
+            <span class="card-title">🎫 回数券 残数管理</span>
+          </div>
+          <table class="cust-table">
+            <thead>
+              <tr><th>患者様</th><th>券種</th><th>購入日</th><th>残数</th><th>有効期限</th><th>状態</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>山本 健司 様</td><td>10回券</td><td>2026-02-10</td><td>残1回</td><td>2026-08-10</td><td><span class="status-dot sd-urgent">🔴 要案内</span></td></tr>
+              <tr><td>佐々木 真由 様</td><td>5回券</td><td>2026-03-15</td><td>残2回</td><td>2026-09-15</td><td><span class="status-dot sd-soon">🟠 残少</span></td></tr>
+              <tr><td>高橋 美咲 様</td><td>自律神経10回券</td><td>2026-01-20</td><td>残2回</td><td>2026-07-20</td><td><span class="status-dot sd-soon">🟠 残少</span></td></tr>
+              <tr><td>渡辺 麻衣 様</td><td>自律神経10回券</td><td>2026-02-05</td><td>残4回</td><td>2026-08-05</td><td><span class="status-dot sd-ok">🟢 余裕あり</span></td></tr>
+              <tr><td>中村 由美 様</td><td>自律神経10回券</td><td>2026-03-01</td><td>残3回</td><td>2026-09-01</td><td><span class="status-dot sd-soon">🟠 残少</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Estimate / 料金プラン -->
+      <div class="page" id="page-estimate">
+        <div class="est-layout">
+          <div class="est-form-card">
+            <div style="font-size:14px;font-weight:700;color:var(--brown-dark);margin-bottom:16px;padding-bottom:10px;border-bottom:1px solid var(--line)">料金プラン案内書 作成</div>
+            <div class="form-group">
+              <label>患者様名</label>
+              <input class="form-input" type="text" id="custName" placeholder="例：高橋 美咲"/>
+            </div>
+            <div class="form-group">
+              <label>コース・回数券</label>
+              <select class="form-select" id="jobType">
+                <option value="">-- 選択してください --</option>
+                <option value="seitai_single">整体40分（単発）</option>
+                <option value="seitai_5">整体40分 5回券</option>
+                <option value="seitai_10">整体40分 10回券</option>
+                <option value="jiritsu_single">自律神経コース60分（単発）</option>
+                <option value="jiritsu_5">自律神経コース60分 5回券</option>
+                <option value="jiritsu_10">自律神経コース60分 10回券</option>
+                <option value="koshi_pack">腰痛集中ケアパック（4回）</option>
+                <option value="kata_pack">肩こり集中ケアパック（4回）</option>
+              </select>
+            </div>
+            <div class="form-row-2">
+              <div class="form-group">
+                <label>枚数</label>
+                <input class="form-input" type="number" id="qty" placeholder="例：1" min="1" value="1"/>
+              </div>
+              <div class="form-group">
+                <label>初回特典</label>
+                <select class="form-select" id="floor">
+                  <option value="1">なし</option>
+                  <option value="2">初回限定割引適用</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>備考</label>
+              <input class="form-input" type="text" id="note" placeholder="例：自律神経の継続ケア希望 等"/>
+            </div>
+            <button class="gen-btn" onclick="generateEstimate()">案内書を作成する</button>
+          </div>
+
+          <div class="est-preview">
+            <div class="ep-head">
+              <span class="ep-title">案内書プレビュー</span>
+              <div class="ep-actions">
+                <button class="ep-btn ep-print" id="printBtn" onclick="printEstimate()" style="display:none">🖨️ 印刷</button>
+                <button class="ep-btn ep-pdf" id="pdfBtn" onclick="downloadPDF()" style="display:none">📄 PDF</button>
+              </div>
+            </div>
+            <div class="ep-body">
+              <div class="ep-empty" id="epEmpty">← 左でコースを選択して<br>「案内書を作成する」を押してください</div>
+              <div class="est-doc" id="estDoc" style="display:none">
+                <div class="est-doc-header">
+                  <div>
+                    <div class="est-doc-company">四谷三丁目整体院</div>
+                    <div style="font-size:11px;color:var(--gray);margin-top:4px;line-height:1.7">東京都新宿区四谷三丁目<br>四谷三丁目駅 徒歩1分<br>土日も20時まで営業</div>
+                  </div>
+                  <div>
+                    <div class="est-doc-label">料金プラン案内</div>
+                    <div style="font-size:11px;color:var(--gray);text-align:right;margin-top:6px" id="docDate"></div>
+                  </div>
+                </div>
+                <div class="est-doc-to">
+                  <div class="to-label">患者様</div>
+                  <div class="to-name" id="docCustName">　　　　　 様</div>
+                </div>
+                <div class="est-doc-meta">
+                  <div><span style="color:var(--gray);font-size:11px">プラン名：</span><span id="docJobName" style="font-weight:500"></span></div>
+                  <div><span style="color:var(--gray);font-size:11px">有効期限：</span><span id="docExpiry"></span></div>
+                </div>
+                <table class="est-table-doc">
+                  <thead><tr><th>項目</th><th style="text-align:right">数量</th><th style="text-align:right">単価</th><th style="text-align:right">金額</th></tr></thead>
+                  <tbody id="docRows"></tbody>
+                </table>
+                <div class="est-total-row">
+                  <span class="tl">合計金額（消費税10%込）</span>
+                  <span class="tv" id="docTotal"></span>
+                </div>
+                <div class="est-note" id="docNote"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+function openSidebar(){document.querySelector('.sidebar').classList.add('open');document.getElementById('overlay').classList.add('open');}
+function closeSidebar(){document.querySelector('.sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('open');}
+const today = new Date();
+document.getElementById('todayDate').textContent = today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  const titles={dashboard:'ダッシュボード',patients:'患者管理',reservation:'予約管理',ticket:'回数券管理',estimate:'料金プラン'};
+  document.getElementById('pageTitle').textContent=titles[id];
+  closeSidebar();
+}
+
+const patients=[
+  {name:'高橋 美咲',age:'38歳・女性',sym:'jiritsu',symLabel:'自律神経',date:'2026-04-12',next:'2026-04-26',ticket:'残2回',status:'urgent'},
+  {name:'渡辺 麻衣',age:'42歳・女性',sym:'jiritsu',symLabel:'自律神経',date:'2026-04-18',next:'2026-05-02',ticket:'残4回',status:'urgent'},
+  {name:'中村 由美',age:'35歳・女性',sym:'jiritsu',symLabel:'自律神経',date:'2026-04-22',next:'2026-05-06',ticket:'残3回',status:'soon'},
+  {name:'山本 健司',age:'52歳・男性',sym:'koshi',symLabel:'腰痛',date:'2026-04-25',next:'2026-05-09',ticket:'残1回',status:'soon'},
+  {name:'佐々木 真由',age:'29歳・女性',sym:'kata',symLabel:'肩こり',date:'2026-04-27',next:'2026-05-11',ticket:'残2回',status:'soon'},
+  {name:'小林 大輔',age:'45歳・男性',sym:'keitsui',symLabel:'頸椎',date:'2026-04-30',next:'2026-05-14',ticket:'残5回',status:'ok'},
+  {name:'伊藤 さくら',age:'31歳・女性',sym:'kata',symLabel:'肩こり',date:'2026-05-01',next:'2026-05-15',ticket:'残4回',status:'ok'},
+  {name:'木村 優太',age:'27歳・男性',sym:'koshi',symLabel:'腰痛',date:'2026-05-03',next:'2026-05-17',ticket:'残6回',status:'ok'},
+];
+
+const sLabel={urgent:'🔴 推奨周期超過',soon:'🟠 もうすぐ',ok:'🟢 余裕あり'};
+const sClass={urgent:'sd-urgent',soon:'sd-soon',ok:'sd-ok'};
+const tagClass={jiritsu:'tag-jiritsu',koshi:'tag-koshi',kata:'tag-kata',keitsui:'tag-keitsui'};
+
+function renderPatients(list){
+  document.getElementById('custBody').innerHTML=list.map(c=>`
+    <tr>
+      <td><div style="font-weight:700">${c.name} 様</div><div style="font-size:11px;color:var(--gray)">${c.age}</div></td>
+      <td><span class="tag ${tagClass[c.sym]}">${c.symLabel}</span></td>
+      <td style="font-size:12px">${c.date}</td>
+      <td style="font-size:12px">${c.next}</td>
+      <td style="font-size:12px">${c.ticket}</td>
+      <td><span class="status-dot ${sClass[c.status]}">${sLabel[c.status]}</span></td>
+      <td><div class="action-cell">
+        <button class="act-btn act-call">📞</button>
+        <button class="act-btn act-mail">✉️</button>
+        <button class="act-btn act-est" onclick="loadEstimate('${c.name}')">📋</button>
+      </div></td>
+    </tr>`).join('');
+}
+renderPatients(patients);
+
+function filterPatients(v){
+  renderPatients(v==='all'?patients:patients.filter(c=>c.sym===v));
+}
+function searchPatients(v){
+  renderPatients(v?patients.filter(c=>c.name.includes(v)):patients);
+}
+
+const jobs={
+  seitai_single:{name:'整体40分（単発）',items:[
+    {n:'整体施術 40分',u:5500},{n:'カウンセリング',u:0}]},
+  seitai_5:{name:'整体40分 5回券',items:[
+    {n:'整体40分 ×5回',u:5000},{n:'回数券割引',u:-2500}]},
+  seitai_10:{name:'整体40分 10回券',items:[
+    {n:'整体40分 ×10回',u:4800},{n:'回数券割引（10回特典）',u:-7000}]},
+  jiritsu_single:{name:'自律神経コース60分（単発）',items:[
+    {n:'自律神経整体 60分',u:8800},{n:'初回カウンセリング',u:0}]},
+  jiritsu_5:{name:'自律神経コース60分 5回券',items:[
+    {n:'自律神経整体60分 ×5回',u:8000},{n:'回数券割引',u:-4000}]},
+  jiritsu_10:{name:'自律神経コース60分 10回券',items:[
+    {n:'自律神経整体60分 ×10回',u:7500},{n:'回数券割引（10回特典）',u:-13000}]},
+  koshi_pack:{name:'腰痛集中ケアパック（4回）',items:[
+    {n:'腰痛集中施術 ×4回',u:6500},{n:'パック割引',u:-2000},{n:'セルフケア指導',u:0}]},
+  kata_pack:{name:'肩こり集中ケアパック（4回）',items:[
+    {n:'肩こり集中施術 ×4回',u:6000},{n:'パック割引',u:-2000},{n:'ストレッチ指導',u:0}]},
+};
+
+let currentEstData=null;
+
+function loadEstimate(name){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('page-estimate').classList.add('active');
+  document.getElementById('pageTitle').textContent='料金プラン';
+  document.querySelectorAll('.nav-item')[4].classList.add('active');
+  document.getElementById('custName').value=name;
+}
+
+function generateEstimate(){
+  const cname=document.getElementById('custName').value||'　';
+  const jtype=document.getElementById('jobType').value;
+  const qty=parseInt(document.getElementById('qty').value)||1;
+  const floor=parseInt(document.getElementById('floor').value)||1;
+  const note=document.getElementById('note').value;
+  if(!jtype){alert('コースを選択してください');return;}
+
+  const job=jobs[jtype];
+  let items=[...job.items.map(i=>({...i,amount:i.u*qty}))];
+  if(floor===2) items.push({n:'初回限定割引',u:-1000,amount:-1000});
+
+  const sub=items.reduce((s,i)=>s+i.amount,0);
+  const tax=Math.floor(sub*.1);
+  const total=sub+tax;
+
+  const exp=new Date(today);
+  exp.setDate(exp.getDate()+30);
+  const expStr=exp.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+  const todayStr=today.toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
+
+  document.getElementById('docDate').textContent='発行日：'+todayStr;
+  document.getElementById('docCustName').textContent=cname+' 様';
+  document.getElementById('docJobName').textContent=job.name;
+  document.getElementById('docExpiry').textContent=expStr;
+
+  let rows=items.map(i=>`<tr><td>${i.n}</td><td style="text-align:right">${qty}</td><td style="text-align:right">¥${i.u.toLocaleString()}</td><td style="text-align:right">¥${i.amount.toLocaleString()}</td></tr>`).join('');
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3" style="font-weight:500">小計</td><td style="text-align:right;font-weight:500">¥${sub.toLocaleString()}</td></tr>`;
+  rows+=`<tr style="background:var(--gray-bg)"><td colspan="3">消費税（10%）</td><td style="text-align:right">¥${tax.toLocaleString()}</td></tr>`;
+  document.getElementById('docRows').innerHTML=rows;
+  document.getElementById('docTotal').textContent='¥'+total.toLocaleString();
+  document.getElementById('docNote').textContent=
+    (note?'備考：'+note+'\n':'')+'・本案内書の有効期限は発行日より30日間です。\n・回数券の有効期限は購入日より6ヶ月です。\n・四谷三丁目駅から徒歩1分、土日も20時まで営業しております。';
+
+  document.getElementById('epEmpty').style.display='none';
+  document.getElementById('estDoc').style.display='block';
+  document.getElementById('pdfBtn').style.display='flex';
+  document.getElementById('printBtn').style.display='flex';
+
+  currentEstData={cname,job,items,sub,tax,total,todayStr,expStr,note};
+}
+
+function printEstimate(){window.print();}
+
+function downloadPDF(){
+  if(!currentEstData){return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({unit:'mm',format:'a4'});
+  doc.setFont('helvetica');
+  doc.setFillColor(109,76,65);
+  doc.rect(0,0,210,28,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(16);
+  doc.text('Yotsuya 3-chome Seitai-in',14,12);
+  doc.setFontSize(9);
+  doc.text('Shinjuku-ku Yotsuya 3-chome  (1 min from station)',14,20);
+  doc.setFontSize(20);
+  doc.text('PRICE PLAN',196,18,{align:'right'});
+
+  doc.setTextColor(80,80,80);
+  doc.setFontSize(9);
+  doc.text('Date: '+currentEstData.todayStr,14,36);
+  doc.text('Valid until: '+currentEstData.expStr,14,42);
+
+  doc.setFillColor(245,230,211);
+  doc.rect(14,48,182,12,'F');
+  doc.setTextColor(78,52,46);
+  doc.setFontSize(10);
+  doc.text('Patient: '+currentEstData.cname+' sama',18,56);
+
+  doc.setFontSize(9);
+  doc.setTextColor(80,80,80);
+  doc.text('Plan: '+currentEstData.job.name,14,68);
+
+  doc.setFillColor(109,76,65);
+  doc.rect(14,74,182,8,'F');
+  doc.setTextColor(255,255,255);
+  doc.setFontSize(8);
+  doc.text('Item',16,79.5);
+  doc.text('Qty',130,79.5);
+  doc.text('Unit',150,79.5);
+  doc.text('Amount',185,79.5,{align:'right'});
+
+  let y=92;
+  doc.setTextColor(40,40,40);
+  currentEstData.items.forEach((item,i)=>{
+    if(i%2===0){doc.setFillColor(250,246,241);doc.rect(14,y-5,182,8,'F');}
+    doc.setFontSize(8);
+    doc.text(item.n,16,y);
+    doc.text('1',133,y);
+    doc.text('Y'+item.u.toLocaleString(),152,y);
+    doc.text('Y'+item.amount.toLocaleString(),196,y,{align:'right'});
+    y+=10;
+  });
+
+  y+=4;
+  doc.setFillColor(109,76,65);
+  doc.rect(14,y,182,14,'F');
+  doc.setTextColor(245,230,211);
+  doc.setFontSize(12);
+  doc.text('Total (incl. tax 10%):  Y '+currentEstData.total.toLocaleString(),196,y+9,{align:'right'});
+
+  y+=22;
+  doc.setTextColor(100,100,100);
+  doc.setFontSize(8);
+  doc.text('Note: Valid for 30 days from issue date.',14,y);
+  if(currentEstData.note){doc.text('Remarks: '+currentEstData.note,14,y+6);}
+
+  doc.setFillColor(250,246,241);
+  doc.rect(0,280,210,17,'F');
+  doc.setTextColor(130,130,130);
+  doc.setFontSize(7);
+  doc.text('Yotsuya 3-chome Seitai-in  |  Open weekends until 20:00',105,290,{align:'center'});
+
+  doc.save('plan_'+currentEstData.cname.replace(' ','')+'.pdf');
+}
+</script>
+</body>
+</html>
